@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/TuneBook_backend"
+]
+resolver = "2"
