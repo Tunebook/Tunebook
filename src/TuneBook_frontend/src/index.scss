@@ -1,37 +1,371 @@
-body {
-  font-family: sans-serif;
-  font-size: 1.5rem;
+/* Sidebar Styles */
+.sidebar {
+  position: fixed;
+  right: -100%; /* Start the sidebar off-screen */
+  top: 0;
+  height: 100%;
+  width: 400px;
+  background-color: #111;
+  z-index: 1000; /* Ensure the sidebar is above other content */
+  transition: right 0.3s ease; /* Slide-in effect */
 }
 
-img {
-  max-width: 50vw;
-  max-height: 25vw;
-  display: block;
-  margin: auto;
+.sidebar.open {
+  right: 0; /* Slide the sidebar in from the right when open */
 }
 
-form {
+.sidebar-content {
+  padding: 20px;
+  color: white;
+  margin-top: 40px;
+}
+
+.close-sidebar {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.login-button {
+  background-color: #58d289;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 20px;
+  cursor: pointer;
+  border: none;
+}
+
+.login-options button {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 0.5em;
-  flex-flow: row wrap;
-  max-width: 40vw;
-  margin: auto;
-  align-items: baseline;
+  background-color: #333;
+  color: white;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 2px solid #34A853; /* Green border like your example */
+  border-radius: 8px;
+  cursor: pointer;
+
 }
 
-button[type="submit"] {
-  padding: 5px 20px;
-  margin: 10px auto;
-  float: right;
+.login-options button img {
+  margin-left: 10px;
+  width: 24px;
+  height: 24px;
 }
 
-#greeting {
-  margin: 10px auto;
-  padding: 10px 60px;
-  border: 1px solid #222;
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: black;
 }
 
-#greeting:empty {
+.navbar-brand {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-links a {
+  justify-content: space-between;
+  color: white;
+  margin-right: 20px;
+  text-decoration: none;
+  font-size: 20px;
+  font-weight: 300;
+
+}
+
+.navbar-logo {
+  width: 40px;  /* Adjust the logo size */
+  height: auto;
+  margin-right: 15px;  /* Add spacing between logo and title */
+  padding: auto;
+}
+
+.navbar-title {
+  font-size: 28px; /* Enlarged title */
+  font-weight: 250px;
+  color: #fff;
+}
+
+
+body {
+  background-color: #000; /* Set background to black */
+  color: #fff; /* Set text color to white */
+  font-family: 'Verdana';
+}
+
+/* Main container */
+.tune-app-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Title */
+.title {
+  font-size: 30px;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+/* Search and Filter */
+.search-filter {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.search-input {
+  flex: 1;
+  margin-right: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #222;
+  border: 1px solid #444;
+  color: #fff;
+}
+
+.select-filter {
+  width: 200px;
+  margin-right: 10px;
+  color: #000;
+}
+
+.select-filter .css-1okebmr-indicatorSeparator {
   display: none;
 }
+
+.select-filter .css-319lph-ValueContainer {
+  background-color: #222;
+  border: 1px solid #444;
+  color: #fff;
+}
+
+/* Tune List */
+.tune-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 100%;
+}
+
+.tune-card {
+  background-color: #111;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(199, 199, 199, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+
+}
+
+.tune-card:hover {
+  background-color: #58d289;
+}
+
+.tune-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.tune-title {
+  font-size: 18px;
+  margin: 0;
+}
+
+.tune-id {
+  font-size: 12px;
+  color: #888;
+}
+
+/* Tune Detail View */
+.tune-detail-view {
+  margin-top: 20px;
+  background-color: #58d289;
+  padding: 40px;
+  border-radius: 10px;
+  color: #000;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.abc-notation {
+  background-color: white;
+  color: #000;
+  padding: 5px;
+  border-radius: 8px;
+  //margin-right: 10px;
+  margin-top: 10px;
+}
+
+.abc-player {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  justify-content: center;
+  //padding: auto;
+}
+
+/* Pagination Wrapper */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px; /* Add space between the tune list and pagination */
+  margin-bottom: 10px;
+}
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  list-style: none; /* Remove bullet points */
+}
+
+.pagination li {
+  margin: 0 5px; /* Spacing between the pagination numbers */
+}
+
+.pagination a {
+  padding: 10px 15px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: #fff;
+  background-color: #333; /* Default background */
+  transition: background-color 0.3s ease; /* Smooth transition */
+}
+
+.pagination a:hover {
+  background-color: #58d289; /* Change background on hover */
+}
+
+.pagination .active a {
+  background-color: #58d289; /* Active page background */
+  color: #fff; /* Active page text color */
+}
+
+/* Additional styling for smaller screens */
+@media (max-width: 768px) {
+  .pagination a {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+
+/* Container for the sessions page */
+.sessions-page {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Add Session Section */
+.add-session-section {
+  background-color: #f1f1f1;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.add-session-section h3 {
+  color: #0a7a3e;
+  margin-bottom: 10px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background-color: #0a7a3e;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button:hover {
+  background-color: #06692f;
+}
+
+/* Session List Section */
+.session-list-section {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 20px;
+}
+
+.sessions-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Sessions list */
+.sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-card {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.session-card a {
+  color: #0a7a3e;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* Session Detail Page */
+.session-detail {
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
