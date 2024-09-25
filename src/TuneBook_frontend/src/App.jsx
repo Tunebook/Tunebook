@@ -99,7 +99,7 @@ return (
     {/* Navigation Bar */}
     <nav className="navbar">
       <div className="navbar-brand">
-        <img src="/music.png" alt="Logo" className="navbar-logo" />
+        <img src="/Music-logo.svg" alt="Logo" className="navbar-logo" />
         <span className="navbar-title">Tunebook</span>
       </div>
       <div className="navbar-links">
