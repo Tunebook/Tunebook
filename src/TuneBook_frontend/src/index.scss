@@ -369,3 +369,27 @@ button:hover {
   border-radius: 8px;
 }
 
+.abc-player-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+#abc-notation {
+  background-color: #58d289;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 800px; /* Limit the width of the ABC notation */
+  margin: 0 auto;
+}
+
+#abc-player {
+  margin-top: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+#abc-audio-controls {
+  margin-top: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}

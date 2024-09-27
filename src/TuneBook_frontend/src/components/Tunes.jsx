@@ -4,6 +4,7 @@ import 'abcjs/abcjs-audio.css';
 import ReactPaginate from "react-paginate";
 import Select from 'react-select';
 import { keyInfo, rhythmInfo } from './variables';  // Import key and rhythm filters
+import { soundfontMapper } from './soundfontMapper';  // Import the soundfont mapper for local fonts
 
 function Tunes({ actor }) {
   const [orgTunes, setOrgTunes] = useState([]);  // Original tunes
@@ -54,12 +55,30 @@ function Tunes({ actor }) {
     }
   };
 
-  // Initialize ABCJS for the selected tune
+  // Initialize ABCJS for the selected tune with local soundfonts
   const iniABCJS = async (tuneData) => {
     if (!tuneData) return;
+
+    // Render ABC notation
     const visualObj = ABCJS.renderAbc("tunedata", tuneData, { responsive: "resize" });
+
+    // Check if visualObj is valid
+    if (!visualObj || visualObj.length === 0) {
+      console.error("Failed to create visualObj from ABC notation.");
+      return;
+    }
+
     try {
-      await synth.init({ visualObj: visualObj[0] });
+      // Initialize synth with local soundfonts
+      await synth.init({
+        visualObj: visualObj[0],
+        options: {
+          soundFontUrl: "/soundfonts/",  // Local soundfont folder
+          //preloadedSoundFonts: soundfontMapper,  // Use the local soundfont mapper
+        },
+      });
+
+      // Set up the synth controls for playback
       await synthControl.setTune(visualObj[0], false, {});
       synthControl.load("#player", null, {
         displayRestart: true,
@@ -123,27 +142,24 @@ function Tunes({ actor }) {
           <p className="no-tunes">No tunes found. Try adjusting your search or filters.</p>
         )}
       </div>
-      
 
-        <div className="pagination-wrapper">
-          <ReactPaginate
-            previousLabel={"Previous"}
-            nextLabel={"Next"}
-            breakLabel={"..."}
-            pageCount={totalPages}  // Total number of pages
-            marginPagesDisplayed={2}
-            pageRangeDisplayed={5}
-            onPageChange={handlePageChange}
-            containerClassName={"pagination"}   // Apply pagination styles
-            pageClassName={"page-item"}         // Class for each page number
-            activeClassName={"active"}          // Active page class
-            previousClassName={"prev"}          // Class for "Previous" link
-            nextClassName={"next"}              // Class for "Next" link
-          />
-        </div>
-
-
-
+      {/* Pagination */}
+      <div className="pagination-wrapper">
+        <ReactPaginate
+          previousLabel={"Previous"}
+          nextLabel={"Next"}
+          breakLabel={"..."}
+          pageCount={totalPages}  // Total number of pages
+          marginPagesDisplayed={2}
+          pageRangeDisplayed={5}
+          onPageChange={handlePageChange}
+          containerClassName={"pagination"}   // Apply pagination styles
+          pageClassName={"page-item"}         // Class for each page number
+          activeClassName={"active"}          // Active page class
+          previousClassName={"prev"}          // Class for "Previous" link
+          nextClassName={"next"}              // Class for "Next" link
+        />
+      </div>
 
       {/* Tune Details */}
       {currentTuneData && (
@@ -158,4 +174,3 @@ function Tunes({ actor }) {
 }
 
 export default Tunes;
-
