@@ -115,11 +115,19 @@ pub fn get_sessions(sub_name: String, page_num: i32) -> (Vec<types::Session>, i3
 }
 
 #[ic_cdk::update]
-pub fn add_session(principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
-    utils::add_session(principal, name, location, daytime, contact, comment)
+pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+    utils::add_session(principal, username, name, location, daytime, contact, comment)
 }
 
 #[ic_cdk::update]
 pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
     utils::update_session(id, principal, name, location, daytime, contact, comment)
 }
+
+#[ic_cdk::query]
+pub fn get_profile(principal: String) -> Option<types::Profile> {
+    utils::get_profile(principal)
+}
+
+
+

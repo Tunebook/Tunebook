@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
-const canisterId = "bkyz2-fmaaa-aaaaa-qaaaq-cai"; // Local canister ID
+const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai"; // Local canister ID
 
 function Sessions({ actor }) {
   const [sessions, setSessions] = useState([]);
@@ -42,6 +42,11 @@ function Sessions({ actor }) {
         const authClient = await AuthClient.create();
         const identity = await authClient.getIdentity();
         const principal = identity.getPrincipal().toString(); 
+
+        // Fetch the profile to get the username
+        const userProfile = await actor.authentication(principal);  // Fetch the profile using the principal
+        const username = userProfile?.username || 'Anonymous';  // Default to 'Anonymous' if no profile found
+        
       // Call the backend add_session method
       const success = await actor.add_session(principal, name, location, daytime, contact, comment);
 
@@ -105,8 +110,9 @@ function Sessions({ actor }) {
           sessions.map((session) => (
             <div key={session.id} className="session-card">
               <h3>{session.name}</h3>
-              <p>Added by: {session.username}</p>
               <p>Location: {session.location}</p>
+              <p>Day and Time: {session.daytime}</p>
+              <p>Added by: {session.username}</p>
               <p>Contact: {session.contact}</p>
               <p>{session.comment}</p>
             </div>

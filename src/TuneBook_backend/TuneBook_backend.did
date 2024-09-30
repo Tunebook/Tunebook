@@ -56,5 +56,6 @@ service : (nat64) -> {
     "get_sessions": (text, int32) -> (vec Session, int32) query;
     "add_session": (text, text, text, text, text, text) -> (bool);
     "update_session": (nat32, text, text, text, text, text, text) -> (bool);
+    get_profile: (text) -> (opt Profile);
 }
 

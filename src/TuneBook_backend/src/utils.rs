@@ -122,6 +122,8 @@ pub async fn init() {
 
 // Initialize tunes from tune_db.json
 pub async fn init() {
+    ic_cdk::setup();
+
     ic_cdk::println!("Initializing tunes from tune_db.json");
 
     let parsed: Value = serde_json::from_str(TUNE_DB_INIT).expect("Failed to parse JSON");
@@ -391,6 +393,17 @@ pub fn get_friends(principal: String) -> Vec<types::Friend> {
     })
 }
 
+pub fn get_profile(principal: String) -> Option<types::Profile> {
+    PROFILE_STORE.with(|profile_store| {
+        if let Some(profile) = profile_store.borrow().get(&principal) {
+            Some(profile.clone()) // Return the profile if it exists
+        } else {
+            None // Return None if no profile exists
+        }
+    })
+}
+
+
 pub async fn send_friend_request(sender: String, receiver: String) -> Option<types::Friend> {
     PROFILE_STORE.with(|profile_store| {
         let mut binding = profile_store.borrow_mut();
@@ -597,11 +610,12 @@ pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32)
     })
 }
 
-pub fn add_session(principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
     SESSION_STORE.with(|session_store| {
         let new_session = types::Session {
             id: ic_cdk::api::time() as u32,
             principal,
+            username,
             name,
             location,
             daytime,

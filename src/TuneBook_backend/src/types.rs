@@ -25,6 +25,7 @@ pub struct Tune {
 pub struct Session {
     pub id: u32,
     pub principal: String,
+    pub username: String,
     pub name: String,
     pub location: String,
     pub daytime: String,

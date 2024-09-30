@@ -1,10 +1,30 @@
 import React, { useState } from 'react';
+import Select from 'react-select';
 
-function myProfile({ actor, currentPrincipal }) {
+function Profile({ actor, currentPrincipal }) {
   const [username, setUsername] = useState('');
   const [location, setLocation] = useState('');
-  const [instruments, setInstruments] = useState('');
+  const [instruments, setInstruments] = useState([]); ;
   const [avatar, setAvatar] = useState(null);
+
+  // Instrument options 
+  const instrumentOptions = [ 
+    { value: 'Piano', label: 'Piano' }, 
+    { value: 'Guitar', label: 'Guitar' }, 
+    { value: 'Flute', label: 'Flute' }, 
+    { value: 'Fiddle', label: 'Fiddle' }, 
+    { value: 'Low_whistle', label: 'Low Whistle' }, 
+    { value: 'Pipes', label: 'Pipes' }, 
+    { value: 'Accordion', label: 'Accordion' }, 
+    { value: 'Concertina', label: 'Concertina' }, 
+    { value: 'Bodhran', label: 'Bodhrán' }, 
+    { value: 'Harp', label: 'Harp' }, 
+    { value: 'Bouzoki', label: 'Bouzoki' }, 
+    { value: 'Mandolin', label: 'Mandolin' }, 
+    { value: 'Banjo', label: 'Banjo' }, 
+    { value: 'other', label: 'Other' }
+  ]
+  
 
   // Handle file input for avatar
   const handleAvatarChange = (e) => {
@@ -18,22 +38,30 @@ function myProfile({ actor, currentPrincipal }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
     try {
+      // Transform selected instruments into Vec<nat8> format (array of bytes)
+      const instrumentsString = instruments.join(', ');
+
+      // Convert instruments string to byte array (Vec<u8> equivalent)
+      const encoder = new TextEncoder();
+      const instrumentsBytes = encoder.encode(instrumentsString);
+
       // Call the backend to create/update the profile
       const newProfile = await actor.update_profile(
         currentPrincipal,
         username,
         avatar ? avatar.split(',')[1] : [],  // Send the avatar data as base64
         location,
-        instruments
+        Array.from(instrumentsBytes)
       );
       console.log('Profile created:', newProfile);
-      // Redirect after successful profile creation
+      // Redirect or notify after successful profile creation
     } catch (error) {
       console.error('Failed to create profile:', error);
     }
   };
+  
 
   return (
     <div className="create-profile-container">
@@ -58,12 +86,13 @@ function myProfile({ actor, currentPrincipal }) {
           />
         </div>
         <div>
-          <label>Instruments:</label>
-          <input 
-            type="text" 
-            value={instruments} 
-            onChange={(e) => setInstruments(e.target.value)} 
-            required 
+        <label>Instruments:</label>
+          <Select
+            isMulti
+            value={instruments}
+            onChange={(selectedOptions) => setInstruments(selectedOptions)}  // Update state on selection
+            options={instrumentOptions}
+            placeholder="Select your instruments"
           />
         </div>
         <div>
@@ -76,4 +105,4 @@ function myProfile({ actor, currentPrincipal }) {
   );
 }
 
-export default myProfile;
+export default Profile;

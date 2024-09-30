@@ -10,7 +10,6 @@ function Friends({ actor, currentPrincipal }) {
   const [myProfile, setMyProfile] = useState(null); // Your own profile info
   const [showMyProfile, setShowMyProfile] = useState(true); // Toggle between showing my profile or friend's profile
 
-
   // Fetch current friends
   const fetchFriends = async () => {
     try {
@@ -21,15 +20,22 @@ function Friends({ actor, currentPrincipal }) {
     }
   };
 
-  // Fetch the logged-in user's profile
-  const fetchMyProfile = async () => {
+// Fetch the logged-in user's profile
+const fetchMyProfile = async () => {
     try {
+      // Correctly fetch the profile using the get_profile function
       const profile = await actor.get_profile(currentPrincipal);
-      setMyProfile(profile);
+      if (profile) {
+        setMyProfile(profile);
+      } else {
+        console.log('No profile found, redirecting to create profile');
+        navigate('/profile'); // Redirect to create profile if no profile found
+      }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     }
   };
+  
 
   useEffect(() => {
     fetchFriends();
@@ -57,14 +63,14 @@ function Friends({ actor, currentPrincipal }) {
         </button>
         {/* Right Sidebar: My Profile and Tunes */}
         <div className="profile-section">
-        <h2>Search for Friends</h2>
-        <input
-          type="text"
-          placeholder="Search people..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+          <h2>Search for Friends</h2>
+          <input
+            type="text"
+            placeholder="Search people..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
         {friends.length > 0 ? (
           friends.map((friend) => (
@@ -117,7 +123,6 @@ function Friends({ actor, currentPrincipal }) {
             <h2>Select a friend to view their profile and tunes.</h2>
           </div>
         )}
-
       </div>
     </div>
   );
