@@ -174,7 +174,7 @@ body {
 /* Tune List */
 .tune-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   max-width: 100%;
 }
@@ -188,6 +188,7 @@ body {
   justify-content: space-between;
   align-items: center;
   transition: background-color 0.2s;
+  margin-bottom: auto;
 
 }
 
@@ -411,8 +412,20 @@ h1 {
 }
 
 .add-session-button:hover {
-  background-color: #58d289;
+  background-color: #06692f;
 }
+
+/* Add this CSS to your stylesheet */
+#map {
+  height: 350px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  border-radius: 15px; /* Rounded corners */
+  overflow: hidden; /* Ensures map tiles don't overflow the container */
+  //box-shadow: 0 4px 10px #58d289(0, 0, 0, 0.3); /* Optional: adds a subtle shadow */
+  margin-inline: 65px;
+}
+
 
 /* Modal Styles */
 .modal {

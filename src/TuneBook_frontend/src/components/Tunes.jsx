@@ -17,9 +17,9 @@ function Tunes({ actor }) {
   const [key, setKey] = useState({ value: "all", label: "Key" });
   const [rhythm, setRhythm] = useState({ value: "all", label: "Rhythm" });
 
+  const [visualObj, setVisualObj] = useState(null);
   const synth = new ABCJS.synth.CreateSynth();
   const synthControl = new ABCJS.synth.SynthController();
-  const [visualObj, setVisualObj] = useState(null);
 
   // Fetch tunes whenever the page, search, or filter changes
   useEffect(() => {
