@@ -182,6 +182,8 @@ pub async fn update_profile(
             profile_store
                 .borrow_mut()
                 .insert(principal, new_profile.clone());
+
+           println!("Updated profile for principal: ");
             new_profile
         } else {
             let new_profile = types::Profile {
@@ -197,6 +199,8 @@ pub async fn update_profile(
             profile_store
                 .borrow_mut()
                 .insert(principal, new_profile.clone());
+
+                println!("Created new profile for principal: "); // Log new profile creation
             new_profile
         }
     })
@@ -396,12 +400,15 @@ pub fn get_friends(principal: String) -> Vec<types::Friend> {
 pub fn get_profile(principal: String) -> Option<types::Profile> {
     PROFILE_STORE.with(|profile_store| {
         if let Some(profile) = profile_store.borrow().get(&principal) {
+            ic_cdk::println!("Profile found for principal: {}", principal); // Log the success
             Some(profile.clone()) // Return the profile if it exists
         } else {
+            ic_cdk::println!("No profile found for principal: {}", principal); // Log the failure
             None // Return None if no profile exists
         }
     })
 }
+
 
 
 pub async fn send_friend_request(sender: String, receiver: String) -> Option<types::Friend> {
@@ -586,6 +593,7 @@ pub fn get_new_tunes_from_friends(_principal: String) -> Vec<types::Tune> {
     // });
 }
 
+
 pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32) {
     SESSION_STORE.with(|session_store| {
         let res: Vec<types::Session> = session_store
@@ -610,23 +618,27 @@ pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32)
     })
 }
 
+
 pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+    ic_cdk::println!("Adding session: principal: {}, username: {}, name: {}", principal, username, name); // Log inputs
+
     SESSION_STORE.with(|session_store| {
         let new_session = types::Session {
-            id: ic_cdk::api::time() as u32,
+            id: ic_cdk::api::time() as u32,  // Unique session ID based on time
             principal,
             username,
             name,
             location,
             daytime,
             contact,
-            comment
+            comment,
         };
 
         session_store.borrow_mut().insert(new_session.id.clone(), new_session);
         true
     })
 }
+
 
 pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
     SESSION_STORE.with(|session_store| {

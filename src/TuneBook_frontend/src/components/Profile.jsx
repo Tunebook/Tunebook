@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
 
 function Profile({ actor, currentPrincipal }) {
   const [username, setUsername] = useState('');
   const [location, setLocation] = useState('');
   const [instruments, setInstruments] = useState([]); ;
   const [avatar, setAvatar] = useState(null);
+  const navigate = useNavigate();
 
   // Instrument options 
   const instrumentOptions = [ 
@@ -57,6 +59,7 @@ function Profile({ actor, currentPrincipal }) {
       );
       console.log('Profile created:', newProfile);
       // Redirect or notify after successful profile creation
+      navigate('/friends')
     } catch (error) {
       console.error('Failed to create profile:', error);
     }

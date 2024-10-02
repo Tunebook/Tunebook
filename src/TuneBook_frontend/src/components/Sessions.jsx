@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AuthClient } from '@dfinity/auth-client';
 
-const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai"; // Local canister ID
 
-function Sessions({ actor }) {
+function Sessions({ actor, currentPrincipal }) {
   const [sessions, setSessions] = useState([]);
   const [searchTerm, setSearchTerm] = useState(''); // For filtering sessions
   const [pageNum, setPageNum] = useState(0); // Pagination control
-  const [totalSessions, setTotalSessions] = useState(0);
+  const [totalSessions, setTotalSessions] = useState(1);
   const [name, setName] = useState(''); // For adding session
   const [location, setLocation] = useState(''); // For adding session
   const [daytime, setDaytime] = useState(''); // For adding session
@@ -17,59 +15,127 @@ function Sessions({ actor }) {
   const [errorMessage, setErrorMessage] = useState(''); // Add session error
   const [showModal, setShowModal] = useState(false);
   const modalRef = useRef(null); // Reference to the modal content
+  const [usernames, setUsernames] = useState({});
 
-  // Function to fetch sessions
+  
+
+
+
+  // Fetch sessions from backend
   const fetchSessions = async () => {
     try {
-      const result = await actor.get_sessions(searchTerm, pageNum);
-      setSessions(result[0]); // Sessions are in the first element of the tuple
-      setTotalSessions(result[1]); // Total number of sessions in the second element
+      const result = await actor.get_sessions("", 0); // Assuming empty search term and page 0
+      console.log("Sessions Data:", result[0]); // Log session data to inspect
+      setSessions(result[0]); // Set session data
+
+      // Fetch usernames for each principal
+      result[0].forEach(async (session) => {
+        if (!usernames[session.principal]) {
+          console.log(`Fetching profile for principal: ${session.principal}`);
+          try {
+            const profile = await actor.authentication(session.principal); // Fetch profile using the principal
+            console.log(`Fetched Profile:`, profile);
+
+            if (profile && profile.username) {
+              setUsernames(prevUsernames => ({
+                ...prevUsernames,
+                [session.principal]: profile.username // Store username by principal
+              }));
+            } else {
+              console.warn(`No profile found for principal: ${session.principal}`);
+              setUsernames(prevUsernames => ({
+                ...prevUsernames,
+                [session.principal]: 'Unknown' // If no profile, fallback to 'Unknown'
+              }));
+            }
+          } catch (error) {
+            console.error('Error fetching profile:', error);
+            setUsernames(prevUsernames => ({
+              ...prevUsernames,
+              [session.principal]: 'Unknown' // Handle errors with fallback
+            }));
+          }
+        }
+      });
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
     }
   };
+
+
+
+
 
   // Fetch sessions when the component mounts or search term/page changes
   useEffect(() => {
     fetchSessions();
   }, [searchTerm, pageNum, actor]);
 
-  // Function to handle session submission (Add Session)
+
+
+
+
   const handleAddSession = async (event) => {
     event.preventDefault();
-
+  
+    if (!/^\S+@\S+\.\S+$/.test(contact)) {
+        console.log("Invalid email address");
+        return;
+      }
     try {
-        const authClient = await AuthClient.create();
-        const identity = await authClient.getIdentity();
-        const principal = identity.getPrincipal().toString(); 
+      if (!currentPrincipal) {
+        console.error('You must be logged in to add a session.');
+        setErrorMessage('You must be logged in to add a session.');
+        return;
+      }
+  
+      const principal = currentPrincipal;
+  
+      // Log the current principal for debugging
+      console.log('Adding session for principal:', principal);
+  
+      // Fetch the user's profile
+      const profile = await actor.authentication(principal);
+      console.log('Fetched Profile:', profile); // Debug log to inspect structure
+  
+      // Check profile structure
+      const username = Array.isArray(profile) && profile.length > 0 ? profile[0].username : profile.username;
+  
+      if (!username) {
+        console.error('You need to have a profile to add a session.');
+        setErrorMessage('You need to have a profile to add a session.');
+        return;
+      }
+  
+      console.log('Adding session with username:', username);
+      console.log("Contact passed to backend: ", contact);
 
-        // Fetch the profile to get the username
-        const userProfile = await actor.authentication(principal);  // Fetch the profile using the principal
-        const username = userProfile?.username || 'Anonymous';  // Default to 'Anonymous' if no profile found
-        
-      // Call the backend add_session method
-      const success = await actor.add_session(principal, name, location, daytime, contact, comment);
 
+      const success = await actor.add_session(principal, username, name, location, daytime, contact, comment);
+  
       if (success) {
         setSuccessMessage('Session added successfully!');
         setErrorMessage('');
+        // Reset form fields
         setName('');
         setLocation('');
         setDaytime('');
         setContact('');
         setComment('');
-        fetchSessions(); // Refresh the session list after adding
-        setShowModal(false); // Close the modal after successful add
+        fetchSessions(); // Refresh sessions list
+        setShowModal(false); // Close modal after successful add
       } else {
-        setSuccessMessage('');
         setErrorMessage('Failed to add session.');
       }
     } catch (error) {
       console.error('Error adding session:', error);
       setErrorMessage('Error adding session. Please try again.');
-      setSuccessMessage('');
     }
   };
+  
+
+
+
 
   // Close modal if user clicks outside the modal content
   const handleOutsideClick = (e) => {
@@ -90,6 +156,11 @@ function Sessions({ actor }) {
       document.removeEventListener('mousedown', handleOutsideClick);
     };
   }, [showModal]);
+
+
+
+
+
 
   return (
     <div className="sessions-container">
@@ -112,9 +183,9 @@ function Sessions({ actor }) {
               <h3>{session.name}</h3>
               <p>Location: {session.location}</p>
               <p>Day and Time: {session.daytime}</p>
-              <p>Added by: {session.username}</p>
+              <p>Added by: {session.username || "Unknown"}</p> {/* Display username signed in prfiles username here  */}
               <p>Contact: {session.contact}</p>
-              <p>{session.comment}</p>
+              <p>Comments: {session.comment}</p>
             </div>
           ))
         ) : (
@@ -128,7 +199,7 @@ function Sessions({ actor }) {
           Previous
         </button>
         <span>
-          Page {pageNum + 1} of {Math.ceil(totalSessions / 15)}
+          Page {pageNum + 1} of {Math.ceil(totalSessions / 9)}
         </span>
         <button disabled={sessions.length < 15} onClick={() => setPageNum(pageNum + 1)}>
           Next

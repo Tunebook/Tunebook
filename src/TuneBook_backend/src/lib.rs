@@ -28,11 +28,17 @@ fn init(time: u64) {
 
 #[ic_cdk::post_upgrade]
 fn post_upgrade(time: u64) {
+    init(time)
+}
+
+/*
+#[ic_cdk::post_upgrade]
+fn post_upgrade(time: u64) {
     ic_cdk::spawn(async {
         utils::init().await;  // Reinitialize after upgrade
     });
     init(time);
-}
+}*/
 
 #[ic_cdk::update]
 async fn update_data() {

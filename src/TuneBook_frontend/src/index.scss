@@ -368,10 +368,12 @@ h1 {
 /* Sessions List */
 .sessions-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  max-width: 100%;
-  margin: 20px 0;
+  //max-width: 100%;
+  //margin: 20px 0;
+  padding: 20px;
+  margin-top: 20px;
 }
 
 .session-card {
@@ -394,6 +396,7 @@ h1 {
   display: flex;
   justify-content: space-between;
   margin-top: 20px;
+  padding: 20px;
 }
 
 .add-session-button {
@@ -510,21 +513,22 @@ h2 {
   margin: 0 auto;
 }
 
+
+
+
 .friends-page {
   display: grid;
-  grid-template-columns: 1fr 2fr; /* Left sidebar takes 1fr, main content 2fr */
+  grid-template-columns: 1fr 2fr; /* Sidebar takes 1fr, main content 2fr */
   gap: 20px;
   padding: 20px;
   height: 100vh; /* Full viewport height */
-  margin-bottom: 50px;
 }
 
 .friends-list {
   background-color: #111;
   padding: 20px;
   border-radius: 8px;
-  height: 100vh;
-  overflow-y: auto;
+  overflow-y: auto; /* Remove the height to allow for flexible scrolling */
 }
 
 .my-profile-button {
@@ -535,6 +539,8 @@ h2 {
   margin-bottom: 20px;
   cursor: pointer;
   border: none;
+  text-align: center; /* Center the text */
+  width: 100%;
 }
 
 .my-profile-button:hover {
@@ -597,6 +603,7 @@ h2 {
   padding: 20px;
   border-radius: 8px;
   margin-top: 20px;
+  text-align: center;
 }
 
 .profile-section h2 {
@@ -613,18 +620,17 @@ h2 {
   margin-top: 10px;
 }
 
-.my-profile-button{
-  display: flex;
-  align-self: center;
-}
-
-/* Make sure everything adjusts for smaller screens */
 @media (max-width: 768px) {
   .friends-page {
     grid-template-columns: 1fr; /* On smaller screens, stack the columns */
     gap: 10px;
   }
+
+  .friends-list {
+    height: auto; /* Ensure the friends list adapts to smaller screens */
+  }
 }
+
 
 
 
@@ -694,4 +700,3 @@ h2 {
 .create-profile-container button:hover {
   background-color: #45b26b; /* Darken the button on hover */
 }
-

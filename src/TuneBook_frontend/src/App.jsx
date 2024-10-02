@@ -30,19 +30,40 @@ function App() {
   const [activeSession, setActiveSession] = useState(false);
   const [activeFriends, setActiveFriends] = useState(false);
 
-  // Initialize AuthClient and actor
   useEffect(() => {
     const initAuthClient = async () => {
       const auth = await AuthClient.create();
-      setAuthClient(auth);
-
-      // Automatically authenticate if the user is already logged in
+      setAuthClient(auth);  // Store the AuthClient instance
+    
       if (await auth.isAuthenticated()) {
+        console.log('User is already authenticated');
         handleLogin(auth.getIdentity());
+      } else {
+        console.log('User is not authenticated');
       }
     };
+  
     initAuthClient();
   }, []);
+  
+
+  /*
+  useEffect(() => {
+    const initAuthClient = async () => {
+      const auth = await AuthClient.create();
+      setAuthClient(auth);  // Store the AuthClient instance
+  
+      if (await auth.isAuthenticated()) {
+        console.log('User is already authenticated');
+        handleLogin(auth.getIdentity());
+      } else {
+        console.log('User is not authenticated');
+      }
+    };
+  
+    initAuthClient();
+  }, []);
+  */
   
 
   // Initialize backend actor on component mount
@@ -91,28 +112,27 @@ function App() {
 // Authenticate user and fetch profile
 const handleLogin = async (identity) => {
   try {
-    // Check if identity is available before proceeding
     if (!identity) {
       console.error('Identity is undefined. Unable to authenticate.');
       return;
     }
 
-    const actorInstance = initActor(identity);  // Initialize actor with the user's identity
-    setActor(actorInstance);  // Set actor in state
-    
+    const actorInstance = initActor(identity);  // Initialize actor with identity
+    setActor(actorInstance);
+
     const principal = identity.getPrincipal().toString();  // User's principal
     setCurrentAccount(principal);
+    console.log('User logged in with principal:', principal);
 
-    // Fetch user profile using the backend authentication function
+    // Fetch user profile
     const userProfile = await actorInstance.authentication(principal);
-
-    // Handle profile based on its existence
     if (userProfile && Object.keys(userProfile).length > 0) {
       setProfile(userProfile);
       console.log('Profile fetched:', userProfile);
     } else {
       console.log('No profile found. Redirecting to profile creation...');
       navigate('/profile');  // Navigate to profile creation page if no profile is found
+      
     }
   } catch (error) {
     console.error('Authentication failed:', error);
@@ -120,30 +140,32 @@ const handleLogin = async (identity) => {
 };
 
 
-  // ICP Identity Login
-  const loginICP = async () => {
-    if (!authClient) return;
-    await authClient.login({
-      identityProvider: "https://identity.ic0.app",
-      maxTimeToLive: 24 * 3_600_000_000_000,
-      onSuccess: async () => {
-        handleLogin(authClient.getIdentity());
-        toggleSidebar();
-      },
-    });
-  };
 
-  // NFID Login
-  const loginNFID = async () => {
-    if (!authClient) return;
-    await authClient.login({
-      identityProvider: "https://nfid.one/authenticate",
-      onSuccess: async () => {
-        handleLogin(authClient.getIdentity());
-        toggleSidebar();
-      },
-    });
-  };
+const loginICP = async () => {
+  if (!authClient) return;
+  await authClient.login({
+    identityProvider: "https://identity.ic0.app",
+    maxTimeToLive: 24 * 3_600_000_000_000,  // Set TTL for how long the session should last
+    onSuccess: async () => {
+      console.log('ICP Login Successful');
+      handleLogin(authClient.getIdentity());
+      toggleSidebar();
+    },
+  });
+};
+
+const loginNFID = async () => {
+  if (!authClient) return;
+  await authClient.login({
+    identityProvider: "https://nfid.one/authenticate",
+    onSuccess: async () => {
+      console.log('NFID Login Successful');
+      handleLogin(authClient.getIdentity());
+      toggleSidebar();
+    },
+  });
+};
+
 
   // Handle clicking the "Sessions" button: Switches the main content to Sessions
   const handleSessionsClick = () => {
@@ -222,7 +244,7 @@ return (
           {/* Sessions Route (Only activated if isSessionsActive is true) */}
           <Route 
             path="/sessions" 
-            element={actor && activeSession ? <Sessions actor={actor} /> : <p>Sessions not available until activated by clicking the button.</p>} 
+            element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available until activated by clicking the button.</p>} 
           />
 
            {/* Sessions Route (Only activated if isSessionsActive is true) */}
