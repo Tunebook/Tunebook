@@ -8,6 +8,7 @@ function Profile({ actor, currentPrincipal }) {
   const [instruments, setInstruments] = useState([]); ;
   const [avatar, setAvatar] = useState(null);
   const navigate = useNavigate();
+  const [pob, setpob] = useState('');
 
   // Instrument options 
   const instrumentOptions = [ 
@@ -30,20 +31,28 @@ function Profile({ actor, currentPrincipal }) {
 
   // Handle file input for avatar
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]; // Get the first file from the input
     const reader = new FileReader();
+  
     reader.onloadend = () => {
-      setAvatar(reader.result);  // Base64 encoded string
+      const arrayBuffer = reader.result; // Get the ArrayBuffer from the file
+      const avatarBytes = new Uint8Array(arrayBuffer); // Convert to Uint8Array
+      setAvatar(avatarBytes); // Set the avatar state to raw bytes
     };
-    reader.readAsDataURL(file);
+  
+    // Read the file as an ArrayBuffer instead of Base64
+    if (file) {
+      reader.readAsArrayBuffer(file); // Read file as an ArrayBuffer
+    }
   };
+  
 
   const handleSubmit = async (event) => {
     event.preventDefault();
   
     try {
       // Transform selected instruments into Vec<nat8> format (array of bytes)
-      const instrumentsString = instruments.join(', ');
+      const instrumentsString = instruments.map(option => option.value).join(', ');
 
       // Convert instruments string to byte array (Vec<u8> equivalent)
       const encoder = new TextEncoder();
@@ -53,17 +62,19 @@ function Profile({ actor, currentPrincipal }) {
       const newProfile = await actor.update_profile(
         currentPrincipal,
         username,
-        avatar ? avatar.split(',')[1] : [],  // Send the avatar data as base64
-        location,
-        Array.from(instrumentsBytes)
+        pob,               // 4. pob (place of birth/location)
+        instrumentsString,  // 5. instruments (string)
+        avatar
       );
+  
       console.log('Profile created:', newProfile);
-      // Redirect or notify after successful profile creation
-      navigate('/friends')
+      navigate('/friends');
     } catch (error) {
       console.error('Failed to create profile:', error);
     }
   };
+  
+  
   
 
   return (
@@ -83,10 +94,12 @@ function Profile({ actor, currentPrincipal }) {
           <label>Location:</label>
           <input 
             type="text" 
-            value={location} 
-            onChange={(e) => setLocation(e.target.value)} 
+            value={pob} 
+            onChange={(e) => setpob(e.target.value)} 
             required 
+            
           />
+    
         </div>
         <div>
         <label>Instruments:</label>
@@ -97,6 +110,7 @@ function Profile({ actor, currentPrincipal }) {
             options={instrumentOptions}
             placeholder="Select your instruments"
           />
+          
         </div>
         <div>
           <label>Avatar:</label>

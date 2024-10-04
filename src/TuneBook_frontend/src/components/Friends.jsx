@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom'; 
 
 function Friends({ actor, currentPrincipal }) {
   const [friends, setFriends] = useState([]); // List of friends
@@ -7,32 +8,49 @@ function Friends({ actor, currentPrincipal }) {
   const [myProfile, setMyProfile] = useState(null); // Your own profile info
   const [showMyProfile, setShowMyProfile] = useState(true); // Toggle between showing my profile or friend's profile
   const [usernames, setUsernames] = useState({}); // Cache for usernames
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const navigate = useNavigate();
+  const [potentialFriends, setPotentialFriends] = useState([]);
 
-  // Fetch current friends
-  const fetchFriends = async () => {
-    try {
-      const result = await actor.get_friends(currentPrincipal);
-      console.log("Friends Data:", result);
-      setFriends(result); // Populate the friends state
-    } catch (error) {
-      console.error('Failed to fetch friends:', error);
-    }
-  };
 
   // Fetch the logged-in user's profile
   const fetchMyProfile = async () => {
     try {
-      const profile = await actor.authentication(currentPrincipal);
-      if (profile) {
-        setMyProfile(profile);
-      } else {
-        console.log('No profile found, redirecting to create profile');
-        // Optionally redirect to profile creation
+        const profileArray = await actor.authentication(currentPrincipal);
+        
+        // Check if the array contains at least one profile object
+        if (profileArray.length > 0) {
+          const profile = profileArray[0]; // Access the first item in the array
+          console.log("Fetched Profile:", profile);  // Log profile to inspect
+          
+          // Set the profile only if username is available
+          if (profile.username) {
+            setMyProfile(profile);  // Store profile in state
+          } else {
+            console.log('No username found in profile');
+          }
+        } else {
+          console.log('No profile found in the array.');
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
       }
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-    }
+      
+      
   };
+  
+
+    // Fetch current friends
+    const fetchFriends = async () => {
+        try {
+          const result = await actor.get_friends(currentPrincipal);
+          console.log("Friends Data:", result);
+          setFriends(result); // Populate the friends state
+        } catch (error) {
+          console.error('Failed to fetch friends:', error);
+        }
+    };
+
 
   // Fetch friend's profile by principal
   const fetchFriendProfile = async (principal) => {
@@ -64,10 +82,27 @@ function Friends({ actor, currentPrincipal }) {
     }
   };
 
+  // Fetch potential friends (users who aren't current friends)
+  const fetchPotentialFriends = async () => {
+    try {
+      const result = await actor.browse_people(currentPrincipal, searchTerm, 0); // Fetch users based on the search term
+      setPotentialFriends(result[0]); // Assuming the result returns [users, count]
+    } catch (error) {
+      console.error('Failed to fetch potential friends:', error);
+    }
+  };
+
   useEffect(() => {
     fetchFriends();
     fetchMyProfile();
   }, [actor, currentPrincipal]);
+
+    // Use effect to fetch potential friends when the search term changes
+    useEffect(() => {
+        if (searchTerm.trim()) {
+          fetchPotentialFriends(); // Fetch potential friends based on search term
+        }
+      }, [searchTerm]);
 
   // Display selected friend's profile
   const displayFriendProfile = async (friend) => {
@@ -86,12 +121,27 @@ function Friends({ actor, currentPrincipal }) {
     setShowMyProfile(true); // Show my profile in the main content
   };
 
+  const handleEditProfileClick = () => {
+    setIsEditProfileOpen(!isEditProfileOpen);  // Toggle the form visibility
+    navigate('/profile'); 
+  };
+
+  // Helper function to convert Uint8Array to Base64 string
+const convertUint8ArrayToBase64 = (uint8Array) => {
+    let binary = '';
+    const len = uint8Array.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return window.btoa(binary); // Converts binary to Base64 string
+  };
+
+
   return (
     
     <div className="friends-page">
       {/* Left Sidebar: Friends List */}
       <div className="friends-list">
-
         
       <button
         className="my-profile-button"
@@ -108,7 +158,22 @@ function Friends({ actor, currentPrincipal }) {
         My Profile
         </button>
 
+        {/* Edit Profile Button */}
+        <button
+        className="edit-profile-button"
+        onClick={() => {
+            if (!currentPrincipal) {
+                alert('You must be signed in to edit your profile.');
+            } else {
+                handleEditProfileClick();  // Navigate to the profile edit page
+            }
+        }}
+        >
+        Edit Profile
+        </button>
 
+
+        {/* Search Input */}
         <div className="profile-section">
           <h2>Search for Friends</h2>
           <input
@@ -119,7 +184,7 @@ function Friends({ actor, currentPrincipal }) {
           />
         </div>
 
-
+        {/* Display current friends based on search term */}
         {friends.length > 0 ? (
           friends
             .filter((friend) =>
@@ -136,13 +201,47 @@ function Friends({ actor, currentPrincipal }) {
                   alt="Avatar"
                   className="friend-avatar"
                 />
-                <h3>{usernames[friend.principal] || friend.username}</h3> {/* Use cached username */}
+                <h3>{usernames[friend.principal] || friend.username}</h3>
               </div>
             ))
         ) : (
           <p>You have no friends yet.</p>
         )}
+
+        {/* Display potential friends (users not in the current friends list) */}
+        {potentialFriends.length > 0 && (
+          <>
+            <h3>Potential Friends</h3>
+            {potentialFriends.map((potentialFriend) => (
+              <div
+                key={potentialFriend.principal}
+                className="friend-item"
+                onClick={() => displayFriendProfile(potentialFriend)}
+              >
+                <img
+                  src={`data:image/png;base64,${convertUint8ArrayToBase64(potentialFriend.avatar)}`}
+                  alt="Avatar"
+                  className="friend-avatar"
+                  style={{ width: '30px', height: '30px', borderRadius: '15px' }}
+                />
+                <h3>{potentialFriend.username}</h3>
+                <button
+                  onClick={() => actor.send_friend_request(currentPrincipal, potentialFriend.principal)}
+
+                  style={{
+                    display: 'flex',
+                    padding: '10px',
+                }}
+                >
+                  Add Friend
+                </button>
+              </div>
+            ))}
+          </>
+        )}
       </div>
+
+
 
       {/* Main Content: Profile and Tunes */}
       <div className="main-profile-content">
@@ -150,10 +249,10 @@ function Friends({ actor, currentPrincipal }) {
           <div className="profile-view">
             <h2>My Profile</h2>
             <img
-              src={`data:image/png;base64,${myProfile.avatar}`}
+              src={`data:image/png;base64,${convertUint8ArrayToBase64(myProfile.avatar)}`}
               alt="My Avatar"
               className="profile-avatar"
-              style={{ width: '100px', height: '100px' }}
+              style={{ width: '100px', height: '100px', borderRadius: '15px' }}
             />
             <p>Username: {myProfile.username}</p>
             <p>Location: {myProfile.pob || 'Unknown'}</p>
@@ -184,7 +283,7 @@ function Friends({ actor, currentPrincipal }) {
           </div>
         ) : (
           <div className="no-friend-selected">
-            <h2>Select a friend to view their profile and tunes.</h2>
+            <h2>No profile found, log in for a profile.</h2>
           </div>
         )}
       </div>

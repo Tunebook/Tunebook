@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { HttpAgent, Actor } from '@dfinity/agent';
 import { AuthClient } from '@dfinity/auth-client';  // Import AuthClient
 import { idlFactory } from '../../declarations/TuneBook_backend/TuneBook_backend.did.js';  // Correct path
@@ -9,8 +9,7 @@ import Sessions from './components/Sessions';
 import Friends from './components/Friends';
 import Profile from './components/Profile';
 
-
-const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai"
+const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
 
 // Initialize actor without authentication
 const initActor = (identity) => {
@@ -20,7 +19,6 @@ const initActor = (identity) => {
 };
 
 function App() {
-  // State for login and tunes
   const [authClient, setAuthClient] = useState(null);
   const [currentAccount, setCurrentAccount] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -29,6 +27,8 @@ function App() {
   const navigate = useNavigate();
   const [activeSession, setActiveSession] = useState(false);
   const [activeFriends, setActiveFriends] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login state
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     const initAuthClient = async () => {
@@ -45,129 +45,78 @@ function App() {
   
     initAuthClient();
   }, []);
-  
 
-  /*
-  useEffect(() => {
-    const initAuthClient = async () => {
-      const auth = await AuthClient.create();
-      setAuthClient(auth);  // Store the AuthClient instance
-  
-      if (await auth.isAuthenticated()) {
-        console.log('User is already authenticated');
-        handleLogin(auth.getIdentity());
-      } else {
-        console.log('User is not authenticated');
-      }
-    };
-  
-    initAuthClient();
-  }, []);
-  */
-  
-
-  // Initialize backend actor on component mount
   useEffect(() => {
     const actorInstance = initActor();  
     setActor(actorInstance);  
   }, []);
 
-  // Toggle sidebar visibility
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  /*
   // Authenticate user and fetch profile
   const handleLogin = async (identity) => {
     try {
-      // Check if identity is available before proceeding
       if (!identity) {
         console.error('Identity is undefined. Unable to authenticate.');
         return;
       }
 
-      const actorInstance = initActor(identity);  // Initialize actor with the user's identity
-      setActor(actorInstance);  // Set actor in state
-      
+      const actorInstance = initActor(identity);  // Initialize actor with identity
+      setActor(actorInstance);
+
       const principal = identity.getPrincipal().toString();  // User's principal
       setCurrentAccount(principal);
+      setIsLoggedIn(true); // Set login state to true
+      console.log('User logged in with principal:', principal);
 
-      // Fetch user profile using the backend authentication function
+      // Fetch user profile
       const userProfile = await actorInstance.authentication(principal);
-      if (userProfile) {
+      if (userProfile && Object.keys(userProfile).length > 0) {
         setProfile(userProfile);
-        navigate('/profile')
         console.log('Profile fetched:', userProfile);
       } else {
-        console.error('User profile not found.');
-        navigate('/profile')
+        console.log('No profile found. Redirecting to profile creation...');
+        navigate('/profile');  // Navigate to profile creation page if no profile is found
       }
     } catch (error) {
       console.error('Authentication failed:', error);
     }
   };
-*/
 
-// Authenticate user and fetch profile
-const handleLogin = async (identity) => {
-  try {
-    if (!identity) {
-      console.error('Identity is undefined. Unable to authenticate.');
-      return;
-    }
+  // Handle Logout
+  const handleLogout = async () => {
+    if (!authClient) return;
 
-    const actorInstance = initActor(identity);  // Initialize actor with identity
-    setActor(actorInstance);
+    await authClient.logout();
+    setCurrentAccount(null);  // Reset user account
+    setIsLoggedIn(false);     // Set login state to false
+    setActor(initActor());    // Re-initialize actor without identity
+    console.log('User has been logged out');
+  };
 
-    const principal = identity.getPrincipal().toString();  // User's principal
-    setCurrentAccount(principal);
-    console.log('User logged in with principal:', principal);
+  const loginICP = async () => {
+    if (!authClient) return;
+    await authClient.login({
+      identityProvider: "https://identity.ic0.app",
+      maxTimeToLive: 24 * 3_600_000_000_000,  // Set TTL for session
+      onSuccess: async () => {
+        console.log('ICP Login Successful');
+        handleLogin(authClient.getIdentity());
+        setSidebarOpen(false);  // Close sidebar after login
+      },
+    });
+  };
 
-    // Fetch user profile
-    const userProfile = await actorInstance.authentication(principal);
-    if (userProfile && Object.keys(userProfile).length > 0) {
-      setProfile(userProfile);
-      console.log('Profile fetched:', userProfile);
-    } else {
-      console.log('No profile found. Redirecting to profile creation...');
-      navigate('/profile');  // Navigate to profile creation page if no profile is found
-      
-    }
-  } catch (error) {
-    console.error('Authentication failed:', error);
-  }
-};
+  const loginNFID = async () => {
+    if (!authClient) return;
+    await authClient.login({
+      identityProvider: "https://nfid.one/authenticate",
+      onSuccess: async () => {
+        console.log('NFID Login Successful');
+        handleLogin(authClient.getIdentity());
+        setSidebarOpen(false);  // Close sidebar after login
+      },
+    });
+  };
 
-
-
-const loginICP = async () => {
-  if (!authClient) return;
-  await authClient.login({
-    identityProvider: "https://identity.ic0.app",
-    maxTimeToLive: 24 * 3_600_000_000_000,  // Set TTL for how long the session should last
-    onSuccess: async () => {
-      console.log('ICP Login Successful');
-      handleLogin(authClient.getIdentity());
-      toggleSidebar();
-    },
-  });
-};
-
-const loginNFID = async () => {
-  if (!authClient) return;
-  await authClient.login({
-    identityProvider: "https://nfid.one/authenticate",
-    onSuccess: async () => {
-      console.log('NFID Login Successful');
-      handleLogin(authClient.getIdentity());
-      toggleSidebar();
-    },
-  });
-};
-
-
-  // Handle clicking the "Sessions" button: Switches the main content to Sessions
   const handleSessionsClick = () => {
     setActiveSession(true);  // Set Sessions active when button is clicked
     setActiveFriends(false);
@@ -175,87 +124,96 @@ const loginNFID = async () => {
   };
 
   const handleFriendsClick = () => {
-    setActiveFriends(true);  // Set Sessions active when button is clicked
+    setActiveFriends(true);  // Set Friends active when button is clicked
     setActiveSession(false);
     navigate('/friends'); 
   };  
 
-    // Handle clicking the "Tunebook" logo to navigate to the default page
-    const handleLogoClick = () => {
-      setActiveSession(false); // Reset Sessions view
-      setActiveFriends(false); // Reset Friends view
-      navigate('/'); // Programmatically navigate to the default page
-    };
+  const handleLogoClick = () => {
+    setActiveSession(false); // Reset Sessions view
+    setActiveFriends(false); // Reset Friends view
+    navigate('/'); // Programmatically navigate to the default page
+  };
 
-return (
-  <div className="app-container">
-    {/* Navigation Bar */}
-    <nav className="navbar">
-    <div className="navbar-brand" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-        <img src="/Music-logo.svg" alt="Logo" className="navbar-logo" />
-        <span className="navbar-title">Tunebook</span>
-      </div>
-      <div className="navbar-links">
+    // Handle clicks outside of the sidebar
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+          setSidebarOpen(false); // Close the sidebar when clicked outside
+        }
+      };
+  
+      if (sidebarOpen) {
+        document.addEventListener('mousedown', handleClickOutside);
+      } else {
+        document.removeEventListener('mousedown', handleClickOutside);
+      }
+  
+      // Cleanup the event listener when the component unmounts or sidebar is closed
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [sidebarOpen]);
+
+
+
+  return (
+    <div className="app-container">
+      {/* Navigation Bar */}
+      <nav className="navbar">
+        <div className="navbar-brand" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
+          <img src="/Music-logo.svg" alt="Logo" className="navbar-logo" />
+          <span className="navbar-title"> Tunebook</span>
+        </div>
+        <div className="navbar-links">
           <div
-          className="navbar-buttons"
-          onClick={() => handleSessionsClick()}
-          style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
+            className="navbar-buttons"
+            onClick={() => handleSessionsClick()}
+            style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
             Sessions
           </div>
 
-        <div
-          className="navbar-buttons"
-          onClick={() => handleFriendsClick()}
-          style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
-        >
-          Friends
-        </div>
-        <button className="login-button" onClick={toggleSidebar}>Login</button>
-      </div>
-    </nav>
+          <div
+            className="navbar-buttons"
+            onClick={() => handleFriendsClick()}
+            style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
+          >
+            Friends
+          </div>
 
-        {/* Sidebar Panel for Login */}
-        <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+          {/* Toggle between Login and Logout buttons based on the isLoggedIn state */}
+          {isLoggedIn ? (
+            <button className="login-button" onClick={handleLogout}>Logout</button>
+          ) : (
+            <button className="login-button" onClick={() => setSidebarOpen(true)}>Login</button>
+          )}
+        </div>
+      </nav>
+
+      {/* Sidebar Panel for Login */}
+      <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-content">
           <h2>Connect To Get Started</h2>
           <p>Sign in to access your profile and interact with the platform.</p>
 
           {/* Use the LoginOptions component for logins */}
           {<LoginOptions onLoginICP={loginICP} onLoginNFID={loginNFID} />}
-
         </div>
 
         {/* Close Sidebar Button */}
-        <button className="close-sidebar" onClick={toggleSidebar}>✖ Close</button>
+        <button className="close-sidebar" onClick={() => setSidebarOpen(false)}>✖ Close</button>
       </div>
 
-      {/* Main Content (SWITCHES BASED ON activeSession STATE) */}
+      {/* Main Content */}
       <div className="main-content">
-      <Routes>
-          {/* Default Route to Tunes */}
+        <Routes>
           <Route path="/" element={actor ? <Tunes actor={actor} /> : <p>Please log in to view tunes.</p>} />
-
-          <Route 
-            path="/profile" 
-            element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available.</p>}  
-          />
-
-          {/* Sessions Route (Only activated if isSessionsActive is true) */}
-          <Route 
-            path="/sessions" 
-            element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available until activated by clicking the button.</p>} 
-          />
-
-           {/* Sessions Route (Only activated if isSessionsActive is true) */}
-           <Route 
-            path="/friends" 
-            element={actor && activeFriends ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available until activated by clicking the button.</p>} 
-          />
-
+          <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available.</p>} />
+          <Route path="/sessions" element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available.</p>} />
+          <Route path="/friends" element={actor && activeFriends ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available.</p>} />
         </Routes>
       </div>
-
     </div>
   );
 }
