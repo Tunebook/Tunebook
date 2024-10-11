@@ -1,8 +1,8 @@
 # Tunebook
 
-Team Members:
-Robert Ripley - Founder
-Gurleen K Dhaliwal - Software Engineer
+# Team Members:
+- Robert Ripley - Founder
+- Gurleen K Dhaliwal - Software Engineer
 
 ## Overview
 
