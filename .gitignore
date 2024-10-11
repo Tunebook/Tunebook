@@ -9,6 +9,7 @@
 
 # dfx temporary files
  .dfx/
+ dfx.json
 
 # generated files
 **/declarations/
@@ -23,3 +24,13 @@ dist/
 
 # environment variables
 .env
+
+# Logs
+*.log
+
+# Lockfiles (optional, but common for Rust and Node projects)
+Cargo.lock
+package-lock.json
+yarn.lock
+
+dfx.json
