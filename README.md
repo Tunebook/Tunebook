@@ -44,7 +44,7 @@ To work with `TunbBook`, ensure you have the Internet Computer SDK (`dfx`) insta
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/your-username/tunebook.git
+    git clone https://github.com/GurleenkDhaliwal/tunebook.git
     cd TuneBook
     ```
 
