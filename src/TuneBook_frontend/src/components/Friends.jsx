@@ -1,132 +1,150 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
+import ABCJS from 'abcjs';  // Import ABCJS
+import 'abcjs/abcjs-audio.css';
 
 function Friends({ actor, currentPrincipal }) {
   const [friends, setFriends] = useState([]); // List of friends
   const [selectedFriend, setSelectedFriend] = useState(null); // Currently selected friend
   const [searchTerm, setSearchTerm] = useState(''); // Search filter for browsing people
   const [myProfile, setMyProfile] = useState(null); // Your own profile info
-  const [showMyProfile, setShowMyProfile] = useState(true); // Toggle between showing my profile or friend's profile
   const [usernames, setUsernames] = useState({}); // Cache for usernames
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const navigate = useNavigate();
   const [potentialFriends, setPotentialFriends] = useState([]);
+  const [activeTab, setActiveTab] = useState('profile'); // Track active tab
+  const [sentRequests, setSentRequests] = useState([]); // Sent friend requests
+  const [receivedRequests, setReceivedRequests] = useState([]); // Received friend requests
+  const navigate = useNavigate();
 
+  const [myTunes, setMyTunes] = useState([]); // State to store user's tunes
+  const [totalTunes, setTotalTunes] = useState(0); // Total number of tunes
+  const [pageNumber, setPageNumber] = useState(0); // Pagination control
+  const TUNES_PER_PAGE = 5; // Number of tunes per page
 
-  // Fetch the logged-in user's profile
-  const fetchMyProfile = async () => {
+  const [currentTuneData, setCurrentTuneData] = useState(''); // Data of the currently selected tune
+  const [currentTuneTitle, setCurrentTuneTitle] = useState(''); // Title of the currently selected tune
+  const [visualObj, setVisualObj] = useState(null); // Store ABCJS visual object
+  const synth = new ABCJS.synth.CreateSynth();  // Create ABCJS Synth
+  const synthControl = new ABCJS.synth.SynthController();
+
+  // Fetch the user's profile and tunes
+  const fetchMyProfileAndTunes = async (page = 0) => {
     try {
-        const profileArray = await actor.authentication(currentPrincipal);
-        
-        // Check if the array contains at least one profile object
-        if (profileArray.length > 0) {
-          const profile = profileArray[0]; // Access the first item in the array
-          console.log("Fetched Profile:", profile);  // Log profile to inspect
-          
-          // Set the profile only if username is available
-          if (profile.username) {
-            setMyProfile(profile);  // Store profile in state
-          } else {
-            console.log('No username found in profile');
-          }
-        } else {
-          console.log('No profile found in the array.');
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
+      const profileArray = await actor.authentication(currentPrincipal);
+      if (profileArray.length > 0) {
+        const profile = profileArray[0];
+        setMyProfile(profile);
+
+        const [tuneList, totalCount] = await actor.get_user_tune_list(currentPrincipal, page);
+        setMyTunes(tuneList);
+        setTotalTunes(totalCount);
       }
-      
-      
-  };
-  
-
-    // Fetch current friends
-    const fetchFriends = async () => {
-        try {
-          const result = await actor.get_friends(currentPrincipal);
-          console.log("Friends Data:", result);
-          setFriends(result); // Populate the friends state
-        } catch (error) {
-          console.error('Failed to fetch friends:', error);
-        }
-    };
-
-
-  // Fetch friend's profile by principal
-  const fetchFriendProfile = async (principal) => {
-    if (!usernames[principal]) {
-      console.log(`Fetching profile for principal: ${principal}`);
-      try {
-        const profile = await actor.authentication(principal);
-        console.log(`Fetched Profile:`, profile);
-
-        if (profile && profile.username) {
-          setUsernames((prevUsernames) => ({
-            ...prevUsernames,
-            [principal]: profile.username, // Store username by principal
-          }));
-        } else {
-          console.warn(`No profile found for principal: ${principal}`);
-          setUsernames((prevUsernames) => ({
-            ...prevUsernames,
-            [principal]: 'Unknown', // Fallback if no profile found
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        setUsernames((prevUsernames) => ({
-          ...prevUsernames,
-          [principal]: 'Unknown', // Handle errors with fallback
-        }));
-      }
+    } catch (error) {
+      console.error('Failed to fetch profile or tunes:', error);
     }
   };
 
-  // Fetch potential friends (users who aren't current friends)
+  // Handle Pagination (next/previous page)
+  const handleNextPage = () => {
+    if ((pageNumber + 1) * TUNES_PER_PAGE < totalTunes) {
+      setPageNumber(pageNumber + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pageNumber > 0) {
+      setPageNumber(pageNumber - 1);
+    }
+  };
+
+  // Fetch current friends
+  const fetchFriends = async () => {
+    try {
+      const result = await actor.get_friends(currentPrincipal);
+      setFriends(result);
+    } catch (error) {
+      console.error('Failed to fetch friends:', error);
+    }
+  };
+
+  // Fetch potential friends based on search term
   const fetchPotentialFriends = async () => {
     try {
-      const result = await actor.browse_people(currentPrincipal, searchTerm, 0); // Fetch users based on the search term
-      setPotentialFriends(result[0]); // Assuming the result returns [users, count]
+      const result = await actor.browse_people(currentPrincipal, searchTerm, 0);
+      setPotentialFriends(result[0]);
     } catch (error) {
       console.error('Failed to fetch potential friends:', error);
     }
   };
 
   useEffect(() => {
-    fetchFriends();
-    fetchMyProfile();
-  }, [actor, currentPrincipal]);
+    if (currentPrincipal) {
+      fetchMyProfileAndTunes(pageNumber); // Fetch profile and tunes on mount
+      fetchFriends(); // Fetch friends
+    }
+  }, [actor, currentPrincipal, pageNumber]);
 
-    // Use effect to fetch potential friends when the search term changes
-    useEffect(() => {
-        if (searchTerm.trim()) {
-          fetchPotentialFriends(); // Fetch potential friends based on search term
-        }
-      }, [searchTerm]);
+  // Fetch potential friends when search term changes
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      fetchPotentialFriends(); // Fetch potential friends
+    }
+  }, [searchTerm]);
 
-  // Display selected friend's profile
-  const displayFriendProfile = async (friend) => {
+  // Function to initialize ABCJS player with selected tune
+  const iniABCJS = async (tuneData) => {
+    if (!tuneData) return;
+    const visualObj = ABCJS.renderAbc("tunedata", tuneData, { responsive: "resize" });
+    
+    if (!visualObj || visualObj.length === 0) {
+      console.error("Failed to create visualObj from ABC notation.");
+      return;
+    }
+
     try {
-      await fetchFriendProfile(friend.principal); // Fetch friend's profile by principal
-      setSelectedFriend(friend);
-      setShowMyProfile(false); // Switch to friend's profile
+      await synth.init({
+        visualObj: visualObj[0],
+        options: {
+          soundFontUrl: "/soundfonts/",  // Local soundfont folder
+        },
+      });
+      await synthControl.setTune(visualObj[0], false, {});
+      synthControl.load("#player", null, {
+        displayRestart: true,
+        displayPlay: true,
+        displayProgress: true,
+        displayWarp: true,
+      });
     } catch (error) {
-      console.error('Failed to fetch friend profile:', error);
+      console.error("Error initializing or playing the tune", error);
     }
   };
 
-  // Handle "My Profile" button click
-  const handleMyProfileClick = () => {
-    setSelectedFriend(null); // Clear any selected friend
-    setShowMyProfile(true); // Show my profile in the main content
+  // Handle selecting a tune from the user's saved tunes
+  const onSelectTune = (tune) => {
+    setCurrentTuneData(tune.tune_data);  // Set the selected tune data
+    setCurrentTuneTitle(tune.title);  // Set the title
+    iniABCJS(tune.tune_data);  // Initialize ABCJS player
   };
 
-  const handleEditProfileClick = () => {
-    setIsEditProfileOpen(!isEditProfileOpen);  // Toggle the form visibility
-    navigate('/profile'); 
+  // Render the user's saved tunes with ABCJS playback option
+  const renderMyTunes = () => {
+    if (myTunes.length === 0) {
+      return <p>You have no tunes saved yet.</p>;
+    }
+
+    return (
+      <ul>
+        {myTunes.map((tune, index) => (
+          <li key={index} onClick={() => onSelectTune(tune)}>
+            <p><strong>{tune.title} </strong> </p>
+            {/* Optional: Add a button or click handler to play the tune */}
+          </li>
+        ))}
+      </ul>
+    );
   };
 
-  // Helper function to convert Uint8Array to Base64 string
+    // Helper function to convert Uint8Array to Base64 string
 const convertUint8ArrayToBase64 = (uint8Array) => {
     let binary = '';
     const len = uint8Array.byteLength;
@@ -136,46 +154,23 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     return window.btoa(binary); // Converts binary to Base64 string
   };
 
-
   return (
-    
     <div className="friends-page">
-      {/* Left Sidebar: Friends List */}
+      {/* Sidebar: Profile Options and Search */}
       <div className="friends-list">
-        
-      <button
-        className="my-profile-button"
-        onClick={handleMyProfileClick}
-        style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%', // Ensures it takes full width if needed
-            padding: '10px', // Add padding for better visual spacing
-            textAlign: 'center', // Center the text horizontally
-        }}
-        >
-        My Profile
+        <button className="my-profile-button" onClick={() => setActiveTab('profile')}>
+          My Profile
         </button>
-
-        {/* Edit Profile Button */}
-        <button
-        className="edit-profile-button"
-        onClick={() => {
-            if (!currentPrincipal) {
-                alert('You must be signed in to edit your profile.');
-            } else {
-                handleEditProfileClick();  // Navigate to the profile edit page
-            }
-        }}
-        >
-        Edit Profile
+        <button className="edit-profile-button" onClick={() => navigate('/profile')}>
+          Edit Profile
         </button>
-
+        <button className="requests-button" onClick={() => setActiveTab('requests')}>
+          Friend Requests
+        </button>
 
         {/* Search Input */}
         <div className="profile-section">
-          <h2>Search for Friends</h2>
+          <h2>Browse users: </h2>
           <input
             type="text"
             placeholder="Search people..."
@@ -194,10 +189,10 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
               <div
                 key={friend.principal}
                 className="friend-item"
-                onClick={() => displayFriendProfile(friend)}
+                onClick={() => setSelectedFriend(friend)}
               >
                 <img
-                  src={`data:image/png;base64,${friend.avatar}`}
+                  src={`data:image/png;base64,${convertUint8ArrayToBase64(friend.avatar)}`}
                   alt="Avatar"
                   className="friend-avatar"
                 />
@@ -208,7 +203,7 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
           <p>You have no friends yet.</p>
         )}
 
-        {/* Display potential friends (users not in the current friends list) */}
+        {/* Display potential friends */}
         {potentialFriends.length > 0 && (
           <>
             <h3>Potential Friends</h3>
@@ -216,7 +211,7 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
               <div
                 key={potentialFriend.principal}
                 className="friend-item"
-                onClick={() => displayFriendProfile(potentialFriend)}
+                onClick={() => setSelectedFriend(potentialFriend)}
               >
                 <img
                   src={`data:image/png;base64,${convertUint8ArrayToBase64(potentialFriend.avatar)}`}
@@ -226,12 +221,8 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
                 />
                 <h3>{potentialFriend.username}</h3>
                 <button
-                  onClick={() => actor.send_friend_request(currentPrincipal, potentialFriend.principal)}
-
-                  style={{
-                    display: 'flex',
-                    padding: '10px',
-                }}
+                  className="add-friend-button"
+                  onClick={() => sendFriendRequest(potentialFriend.principal)}
                 >
                   Add Friend
                 </button>
@@ -241,11 +232,9 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
         )}
       </div>
 
-
-
-      {/* Main Content: Profile and Tunes */}
+      {/* Main Content: Profile, Friend Requests, Selected Friend */}
       <div className="main-profile-content">
-        {showMyProfile && myProfile ? (
+        {activeTab === 'profile' && myProfile && (
           <div className="profile-view">
             <h2>My Profile</h2>
             <img
@@ -257,33 +246,76 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
             <p>Username: {myProfile.username}</p>
             <p>Location: {myProfile.pob || 'Unknown'}</p>
             <p>Instruments: {myProfile.instruments || 'None listed'}</p>
+
+            {/* Render saved tunes */}
             <h3>My Tunes:</h3>
-            <ul>
-              <li>My Tune 1</li>
-              <li>My Tune 2</li>
-            </ul>
+            {renderMyTunes()}
+
+             {/* Tune Details & Player */}
+            {currentTuneData && (
+              <div className="tune-detail-view">
+                <h2 className="tune-title">{currentTuneTitle}</h2>
+                <div id="tunedata" className="abc-notation"></div>
+                <div id="player" className="abc-player"></div>
+              </div>
+            )}
+
+            {/* Pagination controls 
+            <div className="pagination-controls">
+              <button onClick={handlePreviousPage} disabled={pageNumber === 0}>
+                Previous
+              </button>
+              <button
+                onClick={handleNextPage}
+                disabled={(pageNumber + 1) * TUNES_PER_PAGE >= totalTunes}
+              >
+                Next
+              </button>
+            </div> */}
           </div>
-        ) : selectedFriend ? (
-          <div className="profile-view">
-            <h2>{selectedFriend.username}'s Profile</h2>
-            <img
-              src={`data:image/png;base64,${selectedFriend.avatar}`}
-              alt={`${selectedFriend.username}'s Avatar`}
-              className="profile-avatar"
-              style={{ width: '100px', height: '100px' }}
-            />
-            <p>Location: {selectedFriend.pob || 'Unknown'}</p>
-            <p>Instruments: {selectedFriend.instruments || 'None listed'}</p>
-            <h3>Their Tunes:</h3>
-            <ul>
-              <li>Tune 1</li>
-              <li>Tune 2</li>
-              <li>Tune 3</li>
-            </ul>
-          </div>
-        ) : (
-          <div className="no-friend-selected">
-            <h2>No profile found, log in for a profile.</h2>
+        )}
+
+        {/* Other tabs */}
+        {activeTab === 'requests' && (
+          <div className="friend-requests-view">
+            <h2>Friend Requests</h2>
+
+            <h3>Received Requests:</h3>
+            {receivedRequests.length > 0 ? (
+              receivedRequests.map((request, index) => (
+                <div key={index} className="friend-request-item">
+                  <img
+                    src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`}
+                    alt={`${request.username}'s Avatar`}
+                    className="request-avatar"
+                    style={{ width: '50px', height: '50px', borderRadius: '15px' }}
+                  />
+                  <p>{request.username}</p>
+                  <button onClick={() => acceptFriendRequest(request.principal)}>Accept</button>
+                  <button onClick={() => cancelFriendRequest(request.principal)}>Reject</button>
+                </div>
+              ))
+            ) : (
+              <p>No received friend requests.</p>
+            )}
+
+            <h3>Sent Requests:</h3>
+            {sentRequests.length > 0 ? (
+              sentRequests.map((request, index) => (
+                <div key={index} className="friend-request-item">
+                  <img
+                    src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`}
+                    alt={`${request.username}'s Avatar`}
+                    className="request-avatar"
+                    style={{ width: '50px', height: '50px', borderRadius: '50%', marginRight: '10px' }}
+                  />
+                  <p>{request.username}</p>
+                  <button onClick={() => cancelFriendRequest(request.principal)}>Cancel Request</button>
+                </div>
+              ))
+            ) : (
+              <p>No sent friend requests.</p>
+            )}
           </div>
         )}
       </div>

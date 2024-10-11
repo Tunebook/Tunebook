@@ -158,7 +158,7 @@ function App() {
 
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${sidebarOpen ? 'sidebar-open' : ''}`}>
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
@@ -208,7 +208,7 @@ function App() {
       {/* Main Content */}
       <div className="main-content">
         <Routes>
-          <Route path="/" element={actor ? <Tunes actor={actor} /> : <p>Please log in to view tunes.</p>} />
+          <Route path="/" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount}/> : <p>Please log in to view tunes.</p>} />
           <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available.</p>} />
           <Route path="/sessions" element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available.</p>} />
           <Route path="/friends" element={actor && activeFriends ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available.</p>} />

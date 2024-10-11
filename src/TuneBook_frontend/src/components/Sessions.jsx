@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import ReactPaginate from "react-paginate";
+import Select from 'react-select';
 
 // Import the images for the marker icon and shadow
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -18,6 +19,7 @@ function Sessions({ actor, currentPrincipal }) {
  const [daytime, setDaytime] = useState(''); // For adding session
  const [contact, setContact] = useState(''); // For adding session
  const [comment, setComment] = useState(''); // For adding session
+ const [recurring, setRecurring] = useState('N/A');
  const [showModal, setShowModal] = useState(false);
  const [usernames, setUsernames] = useState({});
  const [errorMessage, setErrorMessage] = useState(''); // Add session error
@@ -33,6 +35,14 @@ function Sessions({ actor, currentPrincipal }) {
  const [debouncedTerm, setDebouncedTerm] = useState(searchTerm);
  const [nominatimRequestCount, setNominatimRequestCount] = useState(0);
  const totalPages = Math.ceil(totalSessions / SESSIONS_PER_PAGE); 
+
+ const recurringOptions = [ 
+
+    { value: 'N/A', label: 'N/A' }, 
+    { value: 'Weekly', label: 'Weekly' }, 
+    { value: 'Biweekly', label: 'Biweekly' }, 
+    { value: 'Monthly', label: 'Monthly' }
+  ]
 
 
 // -------------------------------------------------------- //
@@ -152,7 +162,8 @@ const handleAddSession = async (event) => {
       console.log('Adding session with username:', username);
       console.log("Contact passed to backend: ", contact);
 
-      const success = await actor.add_session(principal, username, name, location, daytime, contact, comment);
+      //const success = await actor.add_session(principal, username, name, location, daytime, contact, comment);
+      const success = await actor.add_session(principal, username, name, location, daytime, contact, comment, recurring);
 
       if (success) {
         setSuccessMessage('Session added successfully!');
@@ -163,6 +174,7 @@ const handleAddSession = async (event) => {
         setDaytime('');
         setContact('');
         setComment('');
+        setRecurring('');
         fetchSessions(); // Refresh sessions list
         setShowModal(false); // Close modal after successful add
       } else {
@@ -426,7 +438,7 @@ const handlePageChange = (selectedPage) => {
      <h1>Sessions</h1>
 
        {/* Display the Nominatim request count */}
-       <p>Nominatim requests: {nominatimRequestCount}</p>
+      {/* <p>Nominatim requests: {nominatimRequestCount}</p> */}
 
      {/* Search Input */}
      <input
@@ -451,9 +463,10 @@ const handlePageChange = (selectedPage) => {
              <h3>{session.name}</h3>
              <p>Location: {session.location}</p>
              <p>Day and Time: {session.daytime}</p>
-             <p>Added by: {session.username || "Unknown"}</p> {/* Display username signed in profiles username here */}
+             <p>Added by: {session.username || "Unknown"}</p> 
              <p>Contact: {session.contact}</p>
              <p>Comments: {session.comment}</p>
+             <p>Recurring: {session.recurring}</p> 
            </div>
          ))
        ) : (
@@ -524,6 +537,23 @@ const handlePageChange = (selectedPage) => {
                <label>Comment:</label>
                <textarea value={comment} onChange={(e) => setComment(e.target.value)}></textarea>
              </div>
+             <div>
+            <label>Recurring:</label>
+            <select 
+                value={recurring} 
+                onChange={(e) => setRecurring(e.target.value)} 
+                required
+            >
+                <option value="N/A">N/A</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Biweekly">Biweekly</option>
+                <option value="Monthly">Monthly</option>
+            </select>
+            </div>
+
+
+
+  
              <button type="submit">Add Session</button>
            </form>
          </div>

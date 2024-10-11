@@ -18,7 +18,7 @@ pub struct Tune {
     pub title: String,
     pub tune_data: String,
     pub timestamp: u64,
-    pub principals: Vec<String>,
+    pub principals: Vec<String>
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]
@@ -31,6 +31,7 @@ pub struct Session {
     pub daytime: String,
     pub contact: String,
     pub comment: String,
+    pub recurring: String,
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]

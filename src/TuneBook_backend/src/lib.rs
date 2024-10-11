@@ -100,6 +100,11 @@ pub async fn accept_friend_request(sender: String, receiver: String) -> bool {
     utils::accept_friend_request(sender, receiver).await
 }
 
+#[ic_cdk::update]
+pub async fn cancel_friend_request(sender: String, receiver: String) -> bool {
+    utils::cancel_friend_request(sender, receiver).await
+}
+
 #[ic_cdk::query]
 pub fn filter_tunes(title:String, rithm: String, key: String, page_num: i32) -> (Vec<types::Tuneinfo>, i32) {
     utils::filter_tunes(title.as_str(), rithm.as_str(), key.as_str(), page_num)
@@ -121,8 +126,8 @@ pub fn get_sessions(sub_name: String, page_num: i32) -> (Vec<types::Session>, i3
 }
 
 #[ic_cdk::update]
-pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
-    utils::add_session(principal, username, name, location, daytime, contact, comment)
+pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String, recurring: String) -> bool {
+    utils::add_session(principal, username, name, location, daytime, contact, comment, recurring)
 }
 
 #[ic_cdk::update]

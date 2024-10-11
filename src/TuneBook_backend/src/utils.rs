@@ -284,9 +284,9 @@ pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tu
 
             let res = user_tunes
                 .iter()
-                .skip(page_number as usize * 15)
+                .skip(page_number as usize * 8)
                 .enumerate()
-                .filter(|(index, _)| index.clone() < 15)
+                .filter(|(index, _)| index.clone() < 8)
                 .map(|(_, tune_info)| tune_info.clone())
                 .collect();
 
@@ -414,6 +414,13 @@ pub fn get_profile(principal: String) -> Option<types::Profile> {
 pub async fn send_friend_request(sender: String, receiver: String) -> Option<types::Friend> {
     PROFILE_STORE.with(|profile_store| {
         let mut binding = profile_store.borrow_mut();
+
+          // Check if the sender and receiver are the same
+          if sender == receiver {
+            ic_cdk::println!("Cannot send a friend request to oneself.");
+            return None;  // Return early if attempting to send a request to oneself
+        }
+
         if binding.get(&sender).is_some() && binding.get(&receiver).is_some() {
             let mut sender_profile = binding.get(&sender).unwrap().clone();
             let mut receiver_profile = binding.get(&receiver).unwrap().clone();
@@ -432,6 +439,13 @@ pub async fn send_friend_request(sender: String, receiver: String) -> Option<typ
                 return None;
             }
 
+                // Check if avatar sizes exceed the limit
+                ic_cdk::println!("Sender Avatar Size: {}", sender_profile.avatar.len());
+                ic_cdk::println!("Receiver Avatar Size: {}", receiver_profile.avatar.len());
+                if sender_profile.avatar.len() > 2000000 || receiver_profile.avatar.len() > 2000000 {
+                    ic_cdk::trap("Avatar size exceeds the limit.");
+                }
+
             let incoming_request = types::Friend {
                 principal: sender.clone(),
                 username: sender_profile.username.clone(),
@@ -442,6 +456,7 @@ pub async fn send_friend_request(sender: String, receiver: String) -> Option<typ
                 username: receiver_profile.username.clone(),
                 avatar: receiver_profile.avatar.clone(),
             };
+
             sender_profile.outcoming_fr.push(outcoming_request.clone());
             receiver_profile.incoming_fr.push(incoming_request);
             binding.insert(sender, sender_profile);
@@ -485,6 +500,54 @@ pub async fn accept_friend_request(sender: String, receiver: String) -> bool {
     })
 }
 
+
+pub async fn cancel_friend_request(sender: String, receiver: String) -> bool {
+    PROFILE_STORE.with(|profile_store| {
+        let mut binding = profile_store.borrow_mut();
+
+        // Safely extract sender and receiver profiles
+        if binding.get(&sender).is_some() && binding.get(&receiver).is_some() {
+            let mut sender_profile = binding.get(&sender).unwrap().clone();
+            let mut receiver_profile = binding.get(&receiver).unwrap().clone();
+        
+            // Remove the outgoing request from the sender's profile
+            if let Some(out_position) = sender_profile
+                .outcoming_fr
+                .iter()
+                .position(|fr| fr.principal == receiver)
+            {
+                sender_profile.outcoming_fr.remove(out_position);
+            } else {
+                return false;  // Outgoing request not found
+            }
+
+            // Remove the incoming request from the receiver's profile
+            if let Some(in_position) = receiver_profile
+                .incoming_fr
+                .iter()
+                .position(|fr| fr.principal == sender)
+            {
+                receiver_profile.incoming_fr.remove(in_position);
+            } else {
+                return false;  // Incoming request not found
+            }
+
+            // Save the updated profiles
+            binding.insert(sender.clone(), sender_profile);
+            binding.insert(receiver.clone(), receiver_profile);
+
+            return true;  // Successfully cancelled the request
+        }
+        
+        false  // Either sender or receiver profile not found
+    })
+}
+
+
+
+
+
+
 pub fn filter_tunes(
     sub_title: &str,
     rithm: &str,
@@ -521,6 +584,7 @@ pub fn filter_tunes(
     })
 }
 
+/*
 pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
     PROFILE_STORE.with(|profile_store| {
         let my_profile = profile_store.borrow().get(&my_principal).unwrap().clone();
@@ -563,6 +627,55 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
         (result, res.len() as i32)
     })
 }
+    */
+
+    pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
+        PROFILE_STORE.with(|profile_store| {
+            let my_profile = profile_store.borrow().get(&my_principal).unwrap().clone();
+            let outcoming_principals: Vec<String> = my_profile.outcoming_fr
+                .iter()
+                .map(|friend| friend.principal.clone())
+                .collect();
+    
+            let incoming_principals: Vec<String> = my_profile.incoming_fr
+                .iter()
+                .map(|friend| friend.principal.clone())
+                .collect();
+    
+            // Filter profiles: exclude the current user, friends, and people with existing requests
+            let res: Vec<types::Friend> = profile_store
+                .borrow()
+                .iter()
+                .filter(|(_, profile)| 
+                    profile.username.to_lowercase().contains(&filter.to_lowercase()) &&
+                    profile.principal != my_principal &&  // Exclude current user
+                    !my_profile.friends.contains(&profile.principal) &&  // Exclude friends
+                    !outcoming_principals.contains(&profile.principal) &&  // Exclude outgoing requests
+                    !incoming_principals.contains(&profile.principal)  // Exclude incoming requests
+                )
+                .map(|(principal, profile)| {
+                    let user = types::Friend {
+                        principal: principal.clone(),
+                        avatar: profile.avatar.clone(),
+                        username: profile.username.clone(),
+                    };
+                    user
+                })
+                .collect();
+    
+            let result: Vec<types::Friend> = res
+                .iter()
+                .skip(page_num as usize * 15)
+                .take(15)
+                .cloned()
+                .collect();
+    
+            (result, res.len() as i32)
+        })
+    }
+    
+
+
 
 pub fn get_new_tunes_from_friends(_principal: String) -> Vec<types::Tune> {
     // let friends = PROFILE_STORE.with(|profile_store| {
@@ -617,9 +730,10 @@ pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32)
         (result, res.len() as i32)
     })
 }
+    
 
 
-pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+pub fn add_session(principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String, recurring: String) -> bool {
     ic_cdk::println!("Adding session: principal: {}, username: {}, name: {}", principal, username, name); // Log inputs
 
     SESSION_STORE.with(|session_store| {
@@ -632,6 +746,7 @@ pub fn add_session(principal: String, username: String, name: String, location: 
             daytime,
             contact,
             comment,
+            recurring
         };
 
         session_store.borrow_mut().insert(new_session.id.clone(), new_session);

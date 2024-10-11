@@ -6,7 +6,7 @@ import Select from 'react-select';
 import { keyInfo, rhythmInfo } from './variables';  // Import key and rhythm filters
 import { soundfontMapper } from './soundfontMapper';  // Import the soundfont mapper for local fonts
 
-function Tunes({ actor }) {
+function Tunes({ actor, currentPrincipal }) {
   const [orgTunes, setOrgTunes] = useState([]);  // Original tunes
   const [currentTuneData, setCurrentTuneData] = useState("");
   const [currentTuneTitle, setCurrentTuneTitle] = useState("");
@@ -96,6 +96,36 @@ function Tunes({ actor }) {
     setCurrentPage(data.selected);
   };
 
+
+  const handleAddTune = async (tune) => {
+    try {
+      if (!currentPrincipal) {
+        console.error("User must be logged in to add a tune.");
+        return;
+      }
+  
+      // Assuming tune data is already available in the `tune` object
+      const tuneData = await actor.get_original_tune(tune.title);  // Fetch tune data if not available
+  
+      if (!tuneData) {
+        console.error("Failed to retrieve tune data.");
+        return;
+      }
+  
+      // Call the backend function to add the tune to the user's profile
+      const success = await actor.add_tune(currentPrincipal, tune.title, tuneData, false);  // `origin` is false for shared tunes
+  
+      if (success) {
+        alert(`Tune "${tune.title}" added to your profile!`);
+      } else {
+        alert("Failed to add the tune to your profile. Maybe it's already added?");
+      }
+    } catch (error) {
+      console.error("Error adding tune to profile:", error);
+    }
+  };
+  
+
   return (
     <div className="tune-app-container">
       <h2 className="title">Browse Tunes</h2>
@@ -135,8 +165,20 @@ function Tunes({ actor }) {
                 <span>🎵</span>
                 <p className="tune-title">{tune.title.replaceAll(".abc", "")}</p>
                 <p className="tune-id">{tune.title.split("_")[1]}</p>
-              </div>
-            </div>
+              
+
+       {currentPrincipal && (
+          <button
+            className="add-tune-button"
+            onClick={() => handleAddTune(tune)}
+          >
+            + Add to My Tunes
+          </button>
+        )}
+
+        </div>
+        </div>
+
           ))
         ) : (
           <p className="no-tunes">No tunes found. Try adjusting your search or filters.</p>
