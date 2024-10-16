@@ -414,13 +414,6 @@ pub fn get_profile(principal: String) -> Option<types::Profile> {
 pub async fn send_friend_request(sender: String, receiver: String) -> Option<types::Friend> {
     PROFILE_STORE.with(|profile_store| {
         let mut binding = profile_store.borrow_mut();
-
-          // Check if the sender and receiver are the same
-          if sender == receiver {
-            ic_cdk::println!("Cannot send a friend request to oneself.");
-            return None;  // Return early if attempting to send a request to oneself
-        }
-
         if binding.get(&sender).is_some() && binding.get(&receiver).is_some() {
             let mut sender_profile = binding.get(&sender).unwrap().clone();
             let mut receiver_profile = binding.get(&receiver).unwrap().clone();
@@ -439,13 +432,6 @@ pub async fn send_friend_request(sender: String, receiver: String) -> Option<typ
                 return None;
             }
 
-                // Check if avatar sizes exceed the limit
-                ic_cdk::println!("Sender Avatar Size: {}", sender_profile.avatar.len());
-                ic_cdk::println!("Receiver Avatar Size: {}", receiver_profile.avatar.len());
-                if sender_profile.avatar.len() > 2000000 || receiver_profile.avatar.len() > 2000000 {
-                    ic_cdk::trap("Avatar size exceeds the limit.");
-                }
-
             let incoming_request = types::Friend {
                 principal: sender.clone(),
                 username: sender_profile.username.clone(),
@@ -456,7 +442,6 @@ pub async fn send_friend_request(sender: String, receiver: String) -> Option<typ
                 username: receiver_profile.username.clone(),
                 avatar: receiver_profile.avatar.clone(),
             };
-
             sender_profile.outcoming_fr.push(outcoming_request.clone());
             receiver_profile.incoming_fr.push(incoming_request);
             binding.insert(sender, sender_profile);
@@ -467,6 +452,7 @@ pub async fn send_friend_request(sender: String, receiver: String) -> Option<typ
         }
     })
 }
+
 
 pub async fn accept_friend_request(sender: String, receiver: String) -> bool {
     PROFILE_STORE.with(|profile_store| {

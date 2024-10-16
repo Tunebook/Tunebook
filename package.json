@@ -16,8 +16,10 @@
     "src/TuneBook_frontend"
   ],
   "dependencies": {
-    "@ic-reactor/react": "^1.9.0",
+    "@dfinity/agent": "^2.1.1",
+    "@ic-reactor/react": "^1.9.1",
     "abcjs": "^6.4.3",
+    "leaflet": "^1.9.4",
     "react-paginate": "^8.2.0",
     "react-router-dom": "^6.26.2",
     "react-select": "^5.8.1",

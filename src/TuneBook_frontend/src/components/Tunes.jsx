@@ -58,37 +58,39 @@ function Tunes({ actor, currentPrincipal }) {
   // Initialize ABCJS for the selected tune with local soundfonts
   const iniABCJS = async (tuneData) => {
     if (!tuneData) return;
+  
+    // Add a small delay to ensure DOM is ready
+    setTimeout(async () => {
+      const visualObj = ABCJS.renderAbc("tunedata", tuneData, { responsive: "resize" });
+  
+      if (!visualObj || visualObj.length === 0) {
+        console.error("Failed to create visualObj from ABC notation.");
+        return;
+      }
+  
+      try {
 
-    // Render ABC notation
-    const visualObj = ABCJS.renderAbc("tunedata", tuneData, { responsive: "resize" });
-
-    // Check if visualObj is valid
-    if (!visualObj || visualObj.length === 0) {
-      console.error("Failed to create visualObj from ABC notation.");
-      return;
-    }
-
-    try {
-      // Initialize synth with local soundfonts
-      await synth.init({
-        visualObj: visualObj[0],
-        options: {
-          soundFontUrl: "/soundfonts/",  // Local soundfont folder
-          //preloadedSoundFonts: soundfontMapper,  // Use the local soundfont mapper
-        },
-      });
-
-      // Set up the synth controls for playback
-      await synthControl.setTune(visualObj[0], false, {});
-      synthControl.load("#player", null, {
-        displayRestart: true,
-        displayPlay: true,
-        displayProgress: true,
-        displayWarp: true,
-      });
-    } catch (error) {
-      console.error("Error initializing or playing the tune", error);
-    }
+        const synth = new ABCJS.synth.CreateSynth();
+        const synthControl = new ABCJS.synth.SynthController();
+  
+        await synth.init({
+          visualObj: visualObj[0],
+          options: {
+            soundFontUrl: "/soundfonts/",  // Ensure correct URL
+          },
+        });
+  
+        await synthControl.setTune(visualObj[0], false, {});
+        synthControl.load("#player", null, {
+          displayRestart: true,
+          displayPlay: true,
+          displayProgress: true,
+          displayWarp: true,
+        });
+      } catch (error) {
+        console.error("Error initializing or playing the tune", error);
+      }
+    }, 100); // Delay of 100ms
   };
 
   // Handle pagination

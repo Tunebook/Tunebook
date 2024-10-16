@@ -13,7 +13,9 @@ type Session = record {
   id : nat32;
   "principal" : text;
   contact : text;
+  username : text;
   name : text;
+  recurring : text;
   comment : text;
   location : text;
   daytime : text;
@@ -28,10 +30,11 @@ type Tune = record {
 type Tuneinfo = record { title : text; tune_data : text };
 service : {
   accept_friend_request : (text, text) -> (bool);
-  add_session : (text, text, text, text, text, text) -> (bool);
+  add_session : (text, text, text, text, text, text, text, text) -> (bool);
   add_tune : (text, text, text, bool) -> (bool);
   authentication : (text) -> (opt Profile) query;
   browse_people : (text, text, int32) -> (vec Friend, int32) query;
+  cancel_friend_request : (text, text) -> (bool);
   filter_tunes : (text, text, text, int32) -> (vec Tuneinfo, int32) query;
   get_friends : (text) -> (vec Friend) query;
   get_new_tunes_from_friends : (text) -> (vec Tune) query;

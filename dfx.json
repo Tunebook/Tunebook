@@ -3,7 +3,10 @@
     "TuneBook_backend": {
       "candid": "src/TuneBook_backend/TuneBook_backend.did",
       "package": "TuneBook_backend",
-      "type": "rust"
+      "type": "rust",
+      "canister_id": {
+        "ic": "6owwo-2yaaa-aaaam-qbelq-cai"
+      }
     },
     "TuneBook_frontend": {
       "dependencies": [
@@ -12,7 +15,10 @@
       "source": [
         "src/TuneBook_frontend/dist"
       ],
-      "type": "assets"
+      "type": "assets",
+      "canister_id": {
+        "ic": "7dysa-vqaaa-aaaam-qbema-cai"
+      }
     }
   },
   "defaults": {
