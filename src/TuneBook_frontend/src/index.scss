@@ -268,7 +268,7 @@ body {
 
 
 .tune-title {
-  font-size: 18px;
+  font-size: 14px;
   margin: 0;
   //font-weight: bold;
 }
@@ -720,6 +720,58 @@ h2 {
   overflow-y: auto;
 }
 
+.tunes-lists-container {
+  max-height: 500px; /* Set the max height of the tunes list */
+  overflow-y: auto; /* Enable vertical scroll when content overflows */
+  margin-top: 10px;
+  padding-right: 20px; /* To avoid cutting off the content */
+  background-color: #111;
+  padding-left: 20px;
+  padding-top: 10px;
+  padding-bottom: 20px;
+  border-radius: 15px;
+  //align-self: center;
+  //display: flex;
+
+}
+
+/* Optional: Style the scroll bar for better UI experience */
+.tunes-lists-container::-webkit-scrollbar {
+  width: 12px;
+  border-radius: 15px;
+}
+
+.tunes-lists-container::-webkit-scrollbar-thumb {
+  background-color: #58d289;
+  border-radius: 15px;
+}
+
+.tunes-lists-container::-webkit-scrollbar-track {
+  background-color: #111;
+  border-radius: 15px;
+}
+
+.tabs {
+  margin-top: 10px;
+  width: 100%;
+  display: flex;
+}
+
+.tab-button {
+  padding: 10px 15px;
+  border: none;
+  background-color: #222;
+  cursor: pointer;
+  margin-right: 5px;
+  font-weight: bold;
+  width: 100%;
+}
+
+.tab-button.active {
+  background-color: #58d289;
+  color: white;
+  border-radius: 5px;
+}
 
 /* Individual Tab */
 .tab {
@@ -731,13 +783,15 @@ h2 {
   border: 2px solid transparent;
   margin: 0 10px;
   transition: 0.3s ease;
+  border-radius: 8px;
+
 }
 
 /* Active Tab Styling */
 .tab.active {
   background-color: #58d289;
   color: white;
-  border-radius: 8px 8px 0 0;
+  border-radius: 8px;
 }
 
 /* Main content for tab */
@@ -767,16 +821,17 @@ h2 {
 
 .friend-requests-view div {
   margin-bottom: 10px;
+  background-color: #222;
 }
 
 .friend-requests-view button {
   background-color: #58d289;
-  color: white;
-  padding: 5px 10px;
-  border: none;
+  //color: white;
+  padding: 5px;
+  //border: none;
   border-radius: 5px;
   margin-left: 10px;
-  cursor: pointer;
+  //cursor: pointer;
 }
 
 .friend-requests-view button:hover {
@@ -784,23 +839,25 @@ h2 {
 }
 
 .request-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 10px;
-  background-color: white;
+  //width: 50px;
+  //height: 50px;
+  //border-radius: 50%;
+ // margin-right: 10px;
+  //background-color: white;
+  color: #222;
 }
 
 .friend-request-item {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
-  background-color: white;
+  //background-color: white;
 }
 
 .friend-request-item p {
   margin-right: 20px;
-  background-color: white;
+  //background-color: white;
+  padding-left: 10px;
 }
 
 
@@ -913,6 +970,7 @@ h2 {
   text-align: center;
   margin-top: 20px;
 }
+
 
 
 /* General container for the form */

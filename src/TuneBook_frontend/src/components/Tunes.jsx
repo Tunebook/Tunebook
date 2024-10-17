@@ -116,12 +116,13 @@ function Tunes({ actor, currentPrincipal }) {
   
       // Call the backend function to add the tune to the user's profile
       const success = await actor.add_tune(currentPrincipal, tune.title, tuneData, false);  // `origin` is false for shared tunes
-  
+  /*
       if (success) {
         alert(`Tune "${tune.title}" added to your profile!`);
       } else {
         alert("Failed to add the tune to your profile. Maybe it's already added?");
       }
+      */
     } catch (error) {
       console.error("Error adding tune to profile:", error);
     }

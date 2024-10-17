@@ -10,7 +10,6 @@ function Friends({ actor, currentPrincipal }) {
   const [myProfile, setMyProfile] = useState(null); // Your own profile info
   const [usernames, setUsernames] = useState({}); // Cache for usernames
   const [potentialFriends, setPotentialFriends] = useState([]);
-  const [activeTab, setActiveTab] = useState('profile'); // Track active tab
   const [sentRequests, setSentRequests] = useState([]); // Sent friend requests
   const [receivedRequests, setReceivedRequests] = useState([]); // Received friend requests
   const navigate = useNavigate();
@@ -18,8 +17,8 @@ function Friends({ actor, currentPrincipal }) {
   const [showFriendRequests, setShowFriendRequests] = useState(false);
   const [friendTunes, setFriendTunes] = useState([]); // Friend's tunes
   const [selectedFriendProfile, setSelectedFriendProfile] = useState(null);
-
-
+  const [searchTermForTunes, setSearchTermForTunes] = useState('');
+  const [searchTermForFriendTunes, setSearchTermForFriendTunes] = useState('');
 
   const [myTunes, setMyTunes] = useState([]); // State to store user's tunes
   const [totalTunes, setTotalTunes] = useState(0); // Total number of tunes
@@ -31,6 +30,9 @@ function Friends({ actor, currentPrincipal }) {
   //const [visualObj, setVisualObj] = useState(null); // Store ABCJS visual object
   const synth = new ABCJS.synth.CreateSynth();  // Create ABCJS Synth
   const synthControl = new ABCJS.synth.SynthController();
+
+  const [activeFriendTab, setActiveFriendTab] = useState('all');
+
 
 
 
@@ -107,11 +109,17 @@ const fetchMyProfileAndTunes = async (page = 0) => {
   const fetchPotentialFriends = async () => {
     try {
       const result = await actor.browse_people(currentPrincipal, searchTerm, 0);
-      setPotentialFriends(result[0]);
+      // Ensure valid avatars before setting the state
+      const processedFriends = result[0].map(friend => ({
+        ...friend,
+        avatar: friend.avatar ? friend.avatar : null // Handle missing avatars
+      }));
+      setPotentialFriends(processedFriends);
     } catch (error) {
       console.error('Failed to fetch potential friends:', error);
     }
   };
+  
 
 
   // Function to send a friend request
@@ -278,14 +286,21 @@ const handleFriendRequestsClick = () => {
 
 
     // Helper function to convert Uint8Array to Base64 string
-    const convertUint8ArrayToBase64 = (uint8Array) => {
-      let binary = '';
-      const len = uint8Array.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
-      }
-      return window.btoa(binary); // Converts binary to Base64 string
-    };
+// Helper function to convert Uint8Array to Base64 string
+const convertUint8ArrayToBase64 = (uint8Array) => {
+  if (uint8Array && uint8Array.byteLength) {
+    let binary = '';
+    const len = uint8Array.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    return window.btoa(binary); // Converts binary to Base64 string
+  } else {
+    console.warn("Invalid Uint8Array passed to convertUint8ArrayToBase64");
+    return ''; // Return an empty string if no valid data is passed
+  }
+};
+
 
 
 
@@ -371,6 +386,7 @@ const handleFriendRequestsClick = () => {
     }
 
     return (
+      <div className="tunes-lists-container">
       <ul>
         {myTunes.map((tune, index) => (
           <li key={index} onClick={() => onSelectTune(tune)}>
@@ -379,19 +395,32 @@ const handleFriendRequestsClick = () => {
           </li>
         ))}
       </ul>
+      </div>
     );
   };
 
+    // Filter tunes based on the search term
+    const filteredTunes = myTunes.filter((tune) =>
+      tune.title.toLowerCase().includes(searchTermForTunes.toLowerCase())
+    );
 
+    const filteredFriendTunes = friendTunes.filter((tune) =>
+      tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase())
+    );
+    
+    // Function to get mutual tunes
+    const getMutualTunes = () => {
+      return friendTunes.filter((friendTune) => 
+        myTunes.some((myTune) => myTune.title === friendTune.title)
+      );
+    };
 
+    const filteredMutualTunes = getMutualTunes().filter((tune) =>
+      tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase())
+    );
 
-
-
-
-
-
-
-
+    // Select tunes to display based on the active tab
+    const tunesToDisplay = activeFriendTab === 'all' ? filteredFriendTunes : filteredMutualTunes;
 
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
@@ -494,7 +523,40 @@ const handleFriendRequestsClick = () => {
 
            {/* Render saved tunes */}
            <h3>My Tunes:</h3>
-            {renderMyTunes()}
+            <div className="tunes-lists-container">
+            {/* Search bar for tunes */}
+            <input
+              type="text"
+              placeholder="Search tunes..."
+              value={searchTermForTunes}
+              onChange={(e) => setSearchTermForTunes(e.target.value)}
+              style={{
+                width: '97%',
+                height: '15px',
+                padding: '8px',
+                marginTop: '10px',
+                marginBottom: '10px',
+                borderRadius: '10px',
+                marginRight: '10px',
+                paddingRight: '10px',
+                border: '1px solid #ccc',
+              }}
+            />
+
+        {/* Display the filtered tunes */}
+        <ul>
+          {filteredTunes.length > 0 ? (
+            filteredTunes.map((tune, index) => (
+              <li key={index} onClick={() => onSelectTune(tune)}>
+                <p><strong>{tune.title}</strong></p>
+              </li>
+            ))
+          ) : (
+            <p>No tunes found.</p>
+          )}
+        </ul>
+
+        </div>
 
              {/* Tune Details & Player */}
             {currentTuneData && (
@@ -522,30 +584,65 @@ const handleFriendRequestsClick = () => {
           <p>Location: {selectedFriendProfile.pob}</p>  {/* Display pob */}
           <p>Instruments: {selectedFriendProfile.instruments}</p>  {/* Display instruments */}
 
-          {/* Friend's tunes */}
-          <h3>{selectedFriendProfile.username}'s Tunes:</h3>
-          {friendTunes.length > 0 ? (
-            <ul>
-              {friendTunes.map((tune, index) => (
-                <li key={index} onClick={() => onSelectTune(tune)}> {/* Play tune on click */}
-                  <strong>{tune.title}</strong> {/* Display tune title */}
-                </li>
-              ))}
-            </ul>
+
+          <div className="tunes-lists-container">
+
+        {/* Search bar for friend's tunes */}
+        <input
+          type="text"
+          placeholder="Search friend's tunes..."
+          value={searchTermForFriendTunes}
+          onChange={(e) => setSearchTermForFriendTunes(e.target.value)}
+          style={{
+            width: '97%',
+            height: '15px',
+            padding: '8px',
+            marginTop: '10px',
+            marginBottom: '10px',
+            borderRadius: '10px',
+            border: '1px solid #ccc',
+          }}
+        />
+
+      {/* Tabs for "All Tunes" and "Mutual Tunes" */}
+       <div className="tabs">
+          <button
+            className={`tab-button ${activeFriendTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveFriendTab('all')}
+          >
+            All Tunes
+          </button>
+          <button
+            className={`tab-button ${activeFriendTab === 'mutual' ? 'active' : ''}`}
+            onClick={() => setActiveFriendTab('mutual')}
+          >
+            Mutual Tunes
+          </button>
+        </div>
+
+        {/* Display the filtered tunes based on the active tab */}
+        <ul>
+          {tunesToDisplay.length > 0 ? (
+            tunesToDisplay.map((tune, index) => (
+              <li key={index} onClick={() => onSelectTune(tune)}>
+                <strong>{tune.title}</strong>
+              </li>
+            ))
           ) : (
             <p>{selectedFriendProfile.username} has no tunes.</p>
           )}
-
-          {/* Tune Details & Player */}
-          {currentTuneData && (
-            <div className="tune-detail-view">
-              <h2 className="tune-title">{currentTuneTitle}</h2>
-              <div id="tunedata" className="abc-notation"></div>
-              <div id="player" className="abc-player"></div>
-            </div>
-          )}
+        </ul>
         </div>
 
+        {/* Tune Details & Player */}
+        {currentTuneData && (
+          <div className="tune-detail-view">
+            <h2 className="tune-title">{currentTuneTitle}</h2>
+            <div id="tunedata" className="abc-notation"></div>
+            <div id="player" className="abc-player"></div>
+          </div>
+        )}
+      </div>
 
     
       ) :  showFriendRequests ? (
@@ -555,7 +652,11 @@ const handleFriendRequestsClick = () => {
             {receivedRequests.length > 0 ? (
               receivedRequests.map((request, index) => (
                 <div key={index} className="friend-request-item">
-                  <img src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`} alt={`${request.username}'s Avatar`} className="request-avatar" style={{ width: '50px', height: '50px', borderRadius: '15px' }} />
+                  <img
+                src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`}
+                alt="Avatar"
+                style={{ width: '30px', height: '30px', borderRadius: '15px' }}
+              />
                   <p>{request.username}</p>
                   <button onClick={() => acceptFriendRequest(request.principal)}>Accept</button>
                   <button onClick={() => cancelFriendRequest(request.principal)}>Reject</button>
@@ -568,7 +669,11 @@ const handleFriendRequestsClick = () => {
             {sentRequests.length > 0 ? (
               sentRequests.map((request, index) => (
                 <div key={index} className="friend-request-item">
-                  <img src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`} alt={`${request.username}'s Avatar`} className="request-avatar" style={{ width: '50px', height: '50px', borderRadius: '50%', marginRight: '10px' }} />
+                  <img
+                src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`}
+                alt="Avatar"
+                style={{ width: '30px', height: '30px', borderRadius: '15px' }}
+              />
                   <p>{request.username}</p>
                   <button onClick={() => cancelFriendRequest(request.principal)}>Cancel Request</button>
                 </div>
