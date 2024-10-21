@@ -32,6 +32,8 @@ function Friends({ actor, currentPrincipal }) {
   const synthControl = new ABCJS.synth.SynthController();
 
   const [activeFriendTab, setActiveFriendTab] = useState('all');
+  const [abcNotation, setAbcNotation] = useState("");
+  const [selectedTab, setSelectedTab] = useState("sheet"); 
 
 
 
@@ -96,14 +98,22 @@ const fetchMyProfileAndTunes = async (page = 0) => {
   // Fetch current friends
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
-  const fetchFriends = async () => {
-    try {
-      const result = await actor.get_friends(currentPrincipal);
-      setFriends(result);
-    } catch (error) {
-      console.error('Failed to fetch friends:', error);
-    }
-  };
+// Fetch current friends
+const fetchFriends = async () => {
+  try {
+    const result = await actor.get_friends(currentPrincipal);
+    
+    // Filter out duplicates using `Set` based on `principal`
+    const uniqueFriends = Array.from(
+      new Set(result.map(friend => friend.principal))
+    ).map(principal => result.find(friend => friend.principal === principal));
+
+    setFriends(uniqueFriends); // Set filtered unique friends
+  } catch (error) {
+    console.error('Failed to fetch friends:', error);
+  }
+};
+
 
   // Fetch potential friends based on search term
   const fetchPotentialFriends = async () => {
@@ -352,6 +362,12 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     }, 100); // Delay of 100ms
   };
   
+  useEffect(() => {
+    if (selectedTab === "sheet" && currentTuneData) {
+      iniABCJS(currentTuneData);
+    }
+  }, [selectedTab, currentTuneData]);
+
   
   
 
@@ -374,6 +390,9 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
   const onSelectTune = (tune) => {
     setCurrentTuneData(tune.tune_data);  // Set the selected tune data
     setCurrentTuneTitle(tune.title);  // Set the title
+
+    setSelectedTab("sheet"); 
+    setAbcNotation(tune.tune_data); 
     if(tune.tune_data) {
       iniABCJS(tune.tune_data);  // Initialize ABCJS player
     }
@@ -486,16 +505,20 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
               className="friend-item"
               onClick={() => displayFriendProfile(potentialFriend)} // Display potential friend's profile
             >
-              <img
-                src={`data:image/png;base64,${convertUint8ArrayToBase64(potentialFriend.avatar)}`}
-                alt="Avatar"
-                className="friend-avatar"
-                style={{ width: '30px', height: '30px', borderRadius: '15px' }}
-              />
-              <h3>{potentialFriend.username}</h3> {/* Display potential friend's username */}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src={`data:image/png;base64,${convertUint8ArrayToBase64(potentialFriend.avatar)}`}
+            alt="Avatar"
+            className="friend-avatar"
+          />
+          <h3>{potentialFriend.username}</h3> {/* Display potential friend's username */}
+        </div>
               <button
                 className="add-friend-button"
-                onClick={() => sendFriendRequest(potentialFriend.principal)} // Add friend button
+                onClick={(e) => {
+                  e.stopPropagation();  // Prevent parent div's click event
+                  sendFriendRequest(potentialFriend.principal);
+                }}
               >
                 Add Friend
               </button>
@@ -531,44 +554,108 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
               value={searchTermForTunes}
               onChange={(e) => setSearchTermForTunes(e.target.value)}
               style={{
-                width: '97%',
+                width: '93%',
                 height: '15px',
                 padding: '8px',
                 marginTop: '10px',
                 marginBottom: '10px',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 marginRight: '10px',
+                marginLeft: '9px',
                 paddingRight: '10px',
-                border: '1px solid #ccc',
+                border: '3px solid #58d289',
               }}
             />
 
         {/* Display the filtered tunes */}
-        <ul>
+        <div className="tune-listF">
           {filteredTunes.length > 0 ? (
             filteredTunes.map((tune, index) => (
-              <li key={index} onClick={() => onSelectTune(tune)}>
-                <p><strong>{tune.title}</strong></p>
-              </li>
+              <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
+                <div className="tune-detailsF">
+                  <h3 className="tune-titleF">{tune.title}</h3>
+                  
+                </div>
+              </div>
             ))
           ) : (
             <p>No tunes found.</p>
           )}
-        </ul>
-
         </div>
+        </div>
+      
 
-             {/* Tune Details & Player */}
-            {currentTuneData && (
+            {/* Tune Details with Tabs */}
+              {currentTuneData && (
               <div className="tune-detail-view">
-                <h2 className="tune-title">{currentTuneTitle}</h2>
-                <div id="tunedata" className="abc-notation"></div>
+                <h2 className="tune-titleF">{currentTuneTitle}</h2>
+                
+                {/* Tab Buttons */}
+                <div className="tab-buttons">
+                  <button 
+                    className={selectedTab === "abc" ? "active" : ""} 
+                    onClick={() => setSelectedTab("abc")}
+                  >
+                    ABC
+                  </button>
+                  <button 
+                    className={selectedTab === "sheet" ? "active" : ""} 
+                    onClick={() => setSelectedTab("sheet")}
+                  >
+                    Sheet Music
+                  </button>
+                </div>
+
+                {/* ABC Notation */}
+                {selectedTab === "abc" && (
+                  <div className="abc-container">
+                    <pre>{abcNotation}</pre>
+
+
+                    <button
+                    className="download-btn"
+                    onClick={() => {
+                      const blob = new Blob([abcNotation], { type: "text/plain" });
+                      const link = document.createElement("a");
+                      link.href = URL.createObjectURL(blob);
+                      link.download = `${currentTuneTitle || "abc_tune"}`; // Default filename
+                      document.body.appendChild(link); // Append link to the document body
+                      link.click(); // Programmatically click the link to trigger the download
+                      document.body.removeChild(link); // Clean up by removing the link element
+                    }}
+                  >
+                    Download
+                  </button>
+
+                  <button 
+                    className="copy-btn" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(abcNotation)
+                        .then(() => {
+                          alert("Copied to clipboard!"); // Show success message
+                        })
+                        .catch(() => {
+                          alert("Failed to copy!"); // Show error message if copying fails
+                        });
+                    }}
+                  >
+                    Copy ABC
+                  </button>
+                  </div>
+                )}
+
+                {/* Sheet Music */}
+                {selectedTab === "sheet" && (
+                  <div id="tunedata" className="abc-notation"></div>
+                )}
+                
                 <div id="player" className="abc-player"></div>
               </div>
             )}
 
 
-        </div>
+      </div>   
+        
 
 
       ) : selectedFriendProfile ? (
@@ -589,20 +676,23 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
 
         {/* Search bar for friend's tunes */}
         <input
-          type="text"
-          placeholder="Search friend's tunes..."
-          value={searchTermForFriendTunes}
-          onChange={(e) => setSearchTermForFriendTunes(e.target.value)}
-          style={{
-            width: '97%',
-            height: '15px',
-            padding: '8px',
-            marginTop: '10px',
-            marginBottom: '10px',
-            borderRadius: '10px',
-            border: '1px solid #ccc',
-          }}
-        />
+              type="text"
+              placeholder="Search tunes..."
+              value={searchTermForTunes}
+              onChange={(e) => setSearchTermForTunes(e.target.value)}
+              style={{
+                width: '95%',
+                height: '15px',
+                padding: '8px',
+                marginTop: '10px',
+                marginBottom: '10px',
+                borderRadius: '8px',
+                marginRight: '10px',
+                marginLeft: '1px',
+                paddingRight: '10px',
+                border: '3px solid #58d289',
+              }}
+            />
 
       {/* Tabs for "All Tunes" and "Mutual Tunes" */}
        <div className="tabs">
@@ -621,28 +711,92 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
         </div>
 
         {/* Display the filtered tunes based on the active tab */}
-        <ul>
+        <div className="tune-listF">
+       
           {tunesToDisplay.length > 0 ? (
             tunesToDisplay.map((tune, index) => (
-              <li key={index} onClick={() => onSelectTune(tune)}>
-                <strong>{tune.title}</strong>
-              </li>
+              <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
+                <div className="tune-detailsF">
+                  <h3 className="tune-titleF">{tune.title}</h3>
+                  </div>
+                  </div>
             ))
           ) : (
             <p>{selectedFriendProfile.username} has no tunes.</p>
           )}
-        </ul>
+     
+        </div>
         </div>
 
-        {/* Tune Details & Player */}
-        {currentTuneData && (
-          <div className="tune-detail-view">
-            <h2 className="tune-title">{currentTuneTitle}</h2>
-            <div id="tunedata" className="abc-notation"></div>
-            <div id="player" className="abc-player"></div>
-          </div>
-        )}
-      </div>
+            {/* Tune Details with Tabs */}
+            {currentTuneData && (
+              <div className="tune-detail-view">
+                <h2 className="tune-titleF">{currentTuneTitle}</h2>
+                
+                {/* Tab Buttons */}
+                <div className="tab-buttons">
+                  <button 
+                    className={selectedTab === "abc" ? "active" : ""} 
+                    onClick={() => setSelectedTab("abc")}
+                  >
+                    ABC
+                  </button>
+                  <button 
+                    className={selectedTab === "sheet" ? "active" : ""} 
+                    onClick={() => setSelectedTab("sheet")}
+                  >
+                    Sheet Music
+                  </button>
+                </div>
+
+                {/* ABC Notation */}
+                {selectedTab === "abc" && (
+                  <div className="abc-container">
+                    <pre>{abcNotation}</pre>
+
+                    <div className="button-group">
+                    <button
+                    className="download-btn"
+                    onClick={() => {
+                      const blob = new Blob([abcNotation], { type: "text/plain" });
+                      const link = document.createElement("a");
+                      link.href = URL.createObjectURL(blob);
+                      link.download = `${currentTuneTitle || "abc_tune"}`; // Default filename
+                      document.body.appendChild(link); // Append link to the document body
+                      link.click(); // Programmatically click the link to trigger the download
+                      document.body.removeChild(link); // Clean up by removing the link element
+                    }}
+                  >
+                    Download
+                  </button>
+
+                  <button 
+                    className="copy-btn" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(abcNotation)
+                        .then(() => {
+                          alert("Copied to clipboard!"); // Show success message
+                        })
+                        .catch(() => {
+                          alert("Failed to copy!"); // Show error message if copying fails
+                        });
+                    }}
+                  >
+                    Copy ABC
+                  </button>
+                  </div>
+                  </div>
+                )}
+
+                {/* Sheet Music */}
+                {selectedTab === "sheet" && (
+                  <div id="tunedata" className="abc-notation"></div>
+                )}
+                
+                <div id="player" className="abc-player"></div>
+              </div>
+            )}
+            </div>
 
     
       ) :  showFriendRequests ? (
@@ -687,7 +841,7 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
         ) : (
           // Default view when no friend is selected
           <div className="no-friend-selected">
-            <h2>Select a friend to view their profile and tunes.</h2>
+            <h2> Sign in and login to view your profile and tunes.</h2>
           </div>
         )}
       </div>

@@ -3,11 +3,11 @@ import { HttpAgent, Actor } from '@dfinity/agent';
 import { AuthClient } from '@dfinity/auth-client';  // Import AuthClient
 import { idlFactory } from '../../declarations/TuneBook_backend/TuneBook_backend.did.js';  // Correct path
 import LoginOptions from './components/LoginOptions';  // Import the LoginOptions component
-import Tunes from './components/Tunes';
 import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom'; 
 import Sessions from './components/Sessions';
 import Friends from './components/Friends';
 import Profile from './components/Profile';
+import Tunes from './components/Tunes';
 
 const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
 
@@ -162,8 +162,8 @@ function App() {
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-          <img src="/Music-logo.svg" alt="Logo" className="navbar-logo" />
-          <span className="navbar-title"> Tunebook</span>
+        {/*  <img src="/Music-logo.svg" alt="Logo" className="navbar-logo" /> */}
+          <img src="/Tunebook-Name.png" alt="Tunebook Title" className="navbar-title" />  {/* Use the imported PNG */}
         </div>
         <div className="navbar-links">
           <div
@@ -208,7 +208,7 @@ function App() {
       {/* Main Content */}
       <div className="main-content">
         <Routes>
-          <Route path="/" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount}/> : <p>Please log in to view tunes.</p>} />
+          <Route path="/" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} /> : <p>Please log in to view tunes.</p>} />
           <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available.</p>} />
           <Route path="/sessions" element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available.</p>} />
           <Route path="/friends" element={actor && activeFriends ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available.</p>} />

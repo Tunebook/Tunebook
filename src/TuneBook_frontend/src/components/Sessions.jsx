@@ -30,6 +30,7 @@ function Sessions({ actor, currentPrincipal }) {
  const mapRef = useRef(null); // Reference to the map container div
  const mapInstanceRef = useRef(null); // Reference to the Leaflet map instance
  const [filteredSessions, setFilteredSessions] = useState([]);
+ 
 
  const SESSIONS_PER_PAGE = 9; // Sessions to display per page
  const [debouncedTerm, setDebouncedTerm] = useState(searchTerm);
@@ -443,7 +444,7 @@ const handlePageChange = (selectedPage) => {
      {/* Search Input */}
      <input
        type="text"
-       className="search-input"
+       className="search-input-sessions"
        placeholder="Search sessions"
        value={searchTerm}
        onChange={handleSearchChange}
