@@ -49,6 +49,7 @@ export interface _SERVICE {
     [Array<Friend>, number]
   >,
   'cancel_friend_request' : ActorMethod<[string, string], boolean>,
+  'delete_session' : ActorMethod<[number, string], boolean>,
   'filter_tunes' : ActorMethod<
     [string, string, string, number],
     [Array<Tuneinfo>, number]
@@ -69,7 +70,7 @@ export interface _SERVICE {
     Profile
   >,
   'update_session' : ActorMethod<
-    [number, string, string, string, string, string, string],
+    [number, string, string, string, string, string, string, string],
     boolean
   >,
   'update_tune' : ActorMethod<[string, string, string, boolean], boolean>,

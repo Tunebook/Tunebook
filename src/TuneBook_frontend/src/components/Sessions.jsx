@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import ReactPaginate from "react-paginate";
 import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
 
 // Import the images for the marker icon and shadow
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -37,6 +38,10 @@ function Sessions({ actor, currentPrincipal }) {
  const [nominatimRequestCount, setNominatimRequestCount] = useState(0);
  const totalPages = Math.ceil(totalSessions / SESSIONS_PER_PAGE); 
 
+ const [loading, setLoading] = useState(false); 
+ const [loadingAddSession, setLoadingAddSession] = useState(false); 
+ const navigate = useNavigate();
+
  const recurringOptions = [ 
 
     { value: 'N/A', label: 'N/A' }, 
@@ -56,6 +61,7 @@ function Sessions({ actor, currentPrincipal }) {
 
  // Fetch sessions from backend
  const fetchSessions = async () => {
+  setLoading(true);
     try {
       const result = await actor.get_sessions("", 0); // Assuming empty search term and page 0
       console.log("Sessions Data:", result[0]); // Log session data to inspect
@@ -90,12 +96,15 @@ function Sessions({ actor, currentPrincipal }) {
               ...prevUsernames,
               [session.principal]: 'Unknown' // Handle errors with fallback
             }));
+            setLoading(false);
           }
         }
       });
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
+      setLoading(false);
     }
+    setLoading(false);
   };
  
  
@@ -130,15 +139,14 @@ function Sessions({ actor, currentPrincipal }) {
 
 const handleAddSession = async (event) => {
     event.preventDefault();
+    setLoadingAddSession(true);
 
-    if (!/^\S+@\S+\.\S+$/.test(contact)) {
-      console.log("Invalid email address");
-      return;
-    }
     try {
       if (!currentPrincipal) {
+        setLoadingAddSession(false);
         console.error('You must be logged in to add a session.');
         setErrorMessage('You must be logged in to add a session.');
+
         return;
       }
 
@@ -155,6 +163,7 @@ const handleAddSession = async (event) => {
       const username = Array.isArray(profile) && profile.length > 0 ? profile[0].username : profile.username;
 
       if (!username) {
+        setLoadingAddSession(false);
         console.error('You need to have a profile to add a session.');
         setErrorMessage('You need to have a profile to add a session.');
         return;
@@ -184,7 +193,9 @@ const handleAddSession = async (event) => {
     } catch (error) {
       console.error('Error adding session:', error);
       setErrorMessage('Error adding session. Please try again.');
+      setLoadingAddSession(false);
     }
+    setLoadingAddSession(false);
   };
 
 
@@ -456,8 +467,13 @@ const handlePageChange = (selectedPage) => {
      <div id="map" ref={mapRef} ></div>
 
 
-     {/* Sessions List */}
-     <div className="sessions-list">
+
+     {loading ? (
+       <div className="loading-spinner"></div>
+
+        ) : (
+
+      <div className="sessions-list">
        {filteredSessions.length > 0 ? (
          filteredSessions.map((session) => (
            <div key={session.id} className="session-card">
@@ -470,10 +486,15 @@ const handlePageChange = (selectedPage) => {
              <p>Recurring: {session.recurring}</p> 
            </div>
          ))
+
        ) : (
          <p>No sessions found.</p>
        )}
      </div>
+        )}
+
+
+
 
      {/* Pagination */}
      <div className="pagination-wrapper">
@@ -500,6 +521,7 @@ const handlePageChange = (selectedPage) => {
         onClick={() => {
             if (!currentPrincipal) {
             alert('You must be signed in to add a session.');
+            navigate('/login');
             } else {
             setShowModal(true); // Only show the modal if the user is signed in
             }
@@ -532,7 +554,7 @@ const handlePageChange = (selectedPage) => {
              </div>
              <div>
                <label>Contact:</label>
-               <input type="email" value={contact} onChange={(e) => setContact(e.target.value)} required />
+               <input type="text" value={contact} onChange={(e) => setContact(e.target.value)} required />
              </div>
              <div>
                <label>Comment:</label>
@@ -555,7 +577,10 @@ const handlePageChange = (selectedPage) => {
 
 
   
-             <button type="submit">Add Session</button>
+            <button type="submit" disabled={loadingAddSession}>
+              {loadingAddSession ? "Adding Session..." : "Add Session"}
+            </button>
+
            </form>
          </div>
        </div>

@@ -1,24 +1,10 @@
 mod utils;
 mod types;
 
-/*
-#[ic_cdk::init]
-fn init(time: u64) {
-    ic_cdk_timers::set_timer(std::time::Duration::from_secs(time), || {
-        ic_cdk::spawn(update_data())
-    });
-}
-
-#[ic_cdk::post_upgrade]
-fn post_upgrade(time: u64) {
-    init(time)
-}
-*/
-
 #[ic_cdk::init]
 fn init(time: u64) {
     ic_cdk::spawn(async {
-        utils::init().await;  // Load tunes from tune_db.json into the store
+        utils::init().await;  // Loading tunes from tune_db.json into the store
     });
 
     ic_cdk_timers::set_timer(std::time::Duration::from_secs(time), || {
@@ -26,19 +12,14 @@ fn init(time: u64) {
     });
 }
 
-#[ic_cdk::post_upgrade]
-fn post_upgrade(time: u64) {
-    init(time)
-}
-
-/*
 #[ic_cdk::post_upgrade]
 fn post_upgrade(time: u64) {
     ic_cdk::spawn(async {
         utils::init().await;  // Reinitialize after upgrade
     });
     init(time);
-}*/
+}
+
 
 #[ic_cdk::update]
 async fn update_data() {
@@ -131,8 +112,13 @@ pub fn add_session(principal: String, username: String, name: String, location: 
 }
 
 #[ic_cdk::update]
-pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
-    utils::update_session(id, principal, name, location, daytime, contact, comment)
+pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String, recurring: String) -> bool {
+    utils::update_session(id, principal, name, location, daytime, contact, comment, recurring)
+}
+
+#[ic_cdk::update]
+pub fn delete_session(id: u32, principal: String) -> bool {
+    utils::delete_session(id, principal)
 }
 
 #[ic_cdk::query]

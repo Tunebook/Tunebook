@@ -18,7 +18,8 @@ pub struct Tune {
     pub title: String,
     pub tune_data: String,
     pub timestamp: u64,
-    pub principals: Vec<String>
+    pub principals: Vec<String>,
+    //pub username: Option<String>
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]

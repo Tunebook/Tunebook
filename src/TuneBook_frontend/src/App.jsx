@@ -8,6 +8,14 @@ import Sessions from './components/Sessions';
 import Friends from './components/Friends';
 import Profile from './components/Profile';
 import Tunes from './components/Tunes';
+import Footer from './components/Footer';
+import Contact from './components/ContactUs';
+import FAQ from './components/Faq';
+import ImageCarousel from './components/ImageCarousel'; 
+import FeedbackForm from './components/Feedback';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import Login from './components/Login';
 
 const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
 
@@ -129,6 +137,12 @@ function App() {
     navigate('/friends'); 
   };  
 
+  const handleFeedbackClick = () => {
+    setActiveFriends(false);  // Set Friends active when button is clicked
+    setActiveSession(false);
+    navigate('/feedback'); 
+  }; 
+
   const handleLogoClick = () => {
     setActiveSession(false); // Reset Sessions view
     setActiveFriends(false); // Reset Friends view
@@ -162,10 +176,18 @@ function App() {
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-        {/*  <img src="/Music-logo.svg" alt="Logo" className="navbar-logo" /> */}
+        {  <img src="/Tunebook_Logo.png" alt="Logo" className="navbar-logo" /> }
           <img src="/Tunebook-Name.png" alt="Tunebook Title" className="navbar-title" />  {/* Use the imported PNG */}
         </div>
         <div className="navbar-links">
+        <div
+            className="navbar-buttons"
+            onClick={() => handleFeedbackClick()}
+            style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
+          >
+            Feedback
+          </div>
+
           <div
             className="navbar-buttons"
             onClick={() => handleSessionsClick()}
@@ -207,12 +229,43 @@ function App() {
 
       {/* Main Content */}
       <div className="main-content">
+
+
         <Routes>
-          <Route path="/" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} /> : <p>Please log in to view tunes.</p>} />
+          
+        <Route 
+            path="/" 
+            element={
+              <>
+                <ImageCarousel />
+                {actor ? (
+                  <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} />
+                ) : (
+                  <p>Loading Tunes.</p>
+                )}
+              </>
+            } 
+          />
           <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available.</p>} />
           <Route path="/sessions" element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available.</p>} />
           <Route path="/friends" element={actor && activeFriends ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available.</p>} />
+          <Route path="/login" element={<Login setAuthClient={setAuthClient} setCurrentAccount={setCurrentAccount} setActor={setActor} setIsLoggedIn={setIsLoggedIn} />} />
+        
+          
+          <Route path="/tunes" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} /> : <p>Please log in to view tunes.</p>} />
+          <Route path="/faq" element={<FAQ />} />
+
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/feedback" element={<FeedbackForm />} />
+          
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+
         </Routes>
+
+
+        <Footer />
+
       </div>
     </div>
   );

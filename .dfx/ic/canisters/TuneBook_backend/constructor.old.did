@@ -35,6 +35,7 @@ service : {
   authentication : (text) -> (opt Profile) query;
   browse_people : (text, text, int32) -> (vec Friend, int32) query;
   cancel_friend_request : (text, text) -> (bool);
+  delete_session : (nat32, text) -> (bool);
   filter_tunes : (text, text, text, int32) -> (vec Tuneinfo, int32) query;
   get_friends : (text) -> (vec Friend) query;
   get_new_tunes_from_friends : (text) -> (vec Tune) query;
@@ -45,6 +46,6 @@ service : {
   get_user_tune_list : (text, int32) -> (vec Tuneinfo, int32) query;
   send_friend_request : (text, text) -> (opt Friend);
   update_profile : (text, text, text, text, blob) -> (Profile);
-  update_session : (nat32, text, text, text, text, text, text) -> (bool);
+  update_session : (nat32, text, text, text, text, text, text, text) -> (bool);
   update_tune : (text, text, text, bool) -> (bool);
 }

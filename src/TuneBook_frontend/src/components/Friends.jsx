@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ABCJS from 'abcjs';  // Import ABCJS
 import 'abcjs/abcjs-audio.css';
+import Modal from 'react-modal';
+
+
 
 function Friends({ actor, currentPrincipal }) {
   const [friends, setFriends] = useState([]); // List of friends
@@ -22,18 +25,23 @@ function Friends({ actor, currentPrincipal }) {
 
   const [myTunes, setMyTunes] = useState([]); // State to store user's tunes
   const [totalTunes, setTotalTunes] = useState(0); // Total number of tunes
+  const [libraryTunes, setLibraryTunes] = useState([]); // List of grouped tunes for library display
   const [pageNumber, setPageNumber] = useState(0); // Pagination control
   const TUNES_PER_PAGE = 5; // Number of tunes per page
 
   const [currentTuneData, setCurrentTuneData] = useState(''); // Data of the currently selected tune
   const [currentTuneTitle, setCurrentTuneTitle] = useState(''); // Title of the currently selected tune
-  //const [visualObj, setVisualObj] = useState(null); // Store ABCJS visual object
-  const synth = new ABCJS.synth.CreateSynth();  // Create ABCJS Synth
-  const synthControl = new ABCJS.synth.SynthController();
 
   const [activeFriendTab, setActiveFriendTab] = useState('all');
   const [abcNotation, setAbcNotation] = useState("");
   const [selectedTab, setSelectedTab] = useState("sheet"); 
+
+  // Add Tune
+  const [showAddTuneModal, setShowAddTuneModal] = useState(false);
+  const [newTuneTitle, setNewTuneTitle] = useState('');
+  const [newTuneData, setNewTuneData] = useState('');
+  const [newTuneOrigin, setNewTuneOrigin] = useState(false);
+
 
 
 
@@ -43,6 +51,8 @@ function Friends({ actor, currentPrincipal }) {
 // Fetch the user's profile and tunes, including friend requests
 // -------------------------------------------------------------- 
 // -------------------------------------------------------------- 
+
+
 const fetchMyProfileAndTunes = async (page = 0) => {
   try {
     const profileArray = await actor.authentication(currentPrincipal);
@@ -54,7 +64,11 @@ const fetchMyProfileAndTunes = async (page = 0) => {
       setReceivedRequests(profile.incoming_fr);
       setSentRequests(profile.outcoming_fr);
 
+
+
       const [tuneList, totalCount] = await actor.get_user_tune_list(currentPrincipal, page);
+        const groupedTunes = groupLibraryTunes(tuneList);
+       setLibraryTunes(groupedTunes.library);
       setMyTunes(tuneList);
       setTotalTunes(totalCount);
     }
@@ -64,8 +78,27 @@ const fetchMyProfileAndTunes = async (page = 0) => {
 };
 
 
+const groupLibraryTunes = (tunes) => {
+  const library = [];
+  const singles = [];
+  const tuneMap = {};
 
+  tunes.forEach(tune => {
+    const [baseTitle] = tune.title.split('_');
+    if (!tuneMap[baseTitle]) tuneMap[baseTitle] = [];
+    tuneMap[baseTitle].push(tune);
+  });
 
+  Object.entries(tuneMap).forEach(([baseTitle, versions]) => {
+    if (versions.length > 1) {
+      library.push({ baseTitle, versions }); // Multiple versions go to library
+    } else {
+      singles.push(versions[0]); // Single version goes to regular list
+    }
+  });
+
+  return { library, singles };
+};
 
 
 // -------------------------------------------------------------- 
@@ -87,18 +120,12 @@ const fetchMyProfileAndTunes = async (page = 0) => {
 
 
 
-
-
-
-
-
-
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
   // Fetch current friends
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
-// Fetch current friends
+  // Fetch current friends
 const fetchFriends = async () => {
   try {
     const result = await actor.get_friends(currentPrincipal);
@@ -295,7 +322,6 @@ const handleFriendRequestsClick = () => {
 
 
 
-    // Helper function to convert Uint8Array to Base64 string
 // Helper function to convert Uint8Array to Base64 string
 const convertUint8ArrayToBase64 = (uint8Array) => {
   if (uint8Array && uint8Array.byteLength) {
@@ -308,6 +334,35 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
   } else {
     console.warn("Invalid Uint8Array passed to convertUint8ArrayToBase64");
     return ''; // Return an empty string if no valid data is passed
+  }
+};
+
+// Open and close the Add Tune modal
+const toggleAddTuneModal = () => setShowAddTuneModal(!showAddTuneModal);
+
+// Submit handler for adding a new tune
+const handleAddTuneSubmit = async (e) => {
+  e.preventDefault();
+  if (!newTuneTitle || !newTuneData) {
+    alert('Please fill in all fields.');
+    return;
+  }
+
+  try {
+    const success = await actor.add_tune(currentPrincipal, newTuneTitle, newTuneData, newTuneOrigin);
+    if (success) {
+      alert('Tune added successfully!');
+      setShowAddTuneModal(false); // Close modal on success
+      setNewTuneTitle('');
+      setNewTuneData('');
+      setNewTuneOrigin(false);
+      fetchMyProfileAndTunes(); // Refresh the user's tunes list
+    } else {
+      alert('Tune with this title already exists.');
+    }
+  } catch (error) {
+    console.error('Error adding tune:', error);
+    alert('Failed to add tune. Please try again.');
   }
 };
 
@@ -368,10 +423,6 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     }
   }, [selectedTab, currentTuneData]);
 
-  
-  
-
-
   const fetchFriendTunes = async (principal) => {
     try {
 
@@ -382,9 +433,7 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
       console.error('Error fetching friend tunes:', error);
       setFriendTunes([]); // Clear tunes if there's an error
     }
-  };
-  
-  
+  };  
 
   // Handle selecting a tune from the user's saved tunes
   const onSelectTune = (tune) => {
@@ -418,6 +467,47 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     );
   };
 
+  // Define default profile placeholder data
+    const defaultProfile = {
+      avatar: '/DefaultAvatar.png', 
+      username: 'Guest User',
+      pob: 'Unknown',
+      instruments: 'None listed',
+    };
+
+    // Render a default profile view if not logged in
+    const renderDefaultProfile = () => (
+      <div className="profile-view">
+        <h2>{defaultProfile.username}</h2>
+        <img
+          src={defaultProfile.avatar}  // Use the default avatar
+          alt="Default Avatar"
+          className="profile-avatar"
+          style={{ width: '100px', height: '100px' }}
+        />
+        <p>Location: {defaultProfile.pob}</p>
+        <p>Instruments: {defaultProfile.instruments}</p>
+        <p>
+          Sign in to access your personalized profile, manage friends, and browse
+          tunes.
+        </p>
+        <button onClick={() => navigate('/login')} className="login-button">
+          Login / Sign-up
+        </button>
+      </div>
+    );
+
+    const handleEditProfileClick = () => {
+      if (currentPrincipal) {
+        // If user is logged in, navigate to the Profile page
+        navigate('/profile');
+      } else {
+        // If user is not logged in, show an alert
+        alert('Log in in to edit or create your profile.');
+        navigate('/login');
+      }
+    };
+
     // Filter tunes based on the search term
     const filteredTunes = myTunes.filter((tune) =>
       tune.title.toLowerCase().includes(searchTermForTunes.toLowerCase())
@@ -441,6 +531,9 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     // Select tunes to display based on the active tab
     const tunesToDisplay = activeFriendTab === 'all' ? filteredFriendTunes : filteredMutualTunes;
 
+
+    
+
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
   // ---------------------------View------------------------------- 
@@ -453,7 +546,7 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
         <button className="my-profile-button" onClick={() => handleMyProfileClick()}>
           My Profile
         </button>
-        <button className="edit-profile-button" onClick={() => navigate('/profile')}>
+        <button className="edit-profile-button" onClick={handleEditProfileClick}>
           Edit Profile
         </button>
         <button className="requests-button" onClick={handleFriendRequestsClick}>
@@ -464,10 +557,12 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
         <div className="profile-section">
           <h2>Browse users: </h2>
           <input
+         
             type="text"
             placeholder="Search people..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+
           />
         </div>
 
@@ -543,6 +638,58 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
           <p>Username: {myProfile.username}</p>
           <p>Location: {myProfile.pob || 'Unknown'}</p>
           <p>Instruments: {myProfile.instruments || 'None listed'}</p>
+
+        
+          <button onClick={toggleAddTuneModal}>
+              Add Tune
+            </button>
+          
+
+          {/* Add Tune Modal */}
+            <Modal
+              isOpen={showAddTuneModal}
+              onRequestClose={toggleAddTuneModal}
+              contentLabel="Add Tune"
+              ariaHideApp={false}
+              className="add-tune-modal"
+              overlayClassName="modal-overlay"
+            >
+              <h2>Add New Tune</h2>
+              <form onSubmit={handleAddTuneSubmit}>
+                <label>
+                  Title:
+                  <input
+                    type="text"
+                    value={newTuneTitle}
+                    onChange={(e) => setNewTuneTitle(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Tune Data (ABC Notation):
+                  <textarea
+                    value={newTuneData}
+                    onChange={(e) => setNewTuneData(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Origin:
+                  <input
+                    type="checkbox"
+                    checked={newTuneOrigin}
+                    onChange={(e) => setNewTuneOrigin(e.target.checked)}
+                  />
+                  Original Composition
+                </label>
+                <button type="submit">Save Tune</button>
+                <button type="button" onClick={toggleAddTuneModal}>
+                  Cancel
+                </button>
+              </form>
+            </Modal>
+
+
 
            {/* Render saved tunes */}
            <h3>My Tunes:</h3>
@@ -833,16 +980,13 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
                 </div>
               ))
 
-
             ) : (
               <p>No sent friend requests.</p>
             )}
           </div>
         ) : (
-          // Default view when no friend is selected
-          <div className="no-friend-selected">
-            <h2> Sign in and login to view your profile and tunes.</h2>
-          </div>
+
+          renderDefaultProfile()
         )}
       </div>
       

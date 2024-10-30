@@ -61,6 +61,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'cancel_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'delete_session' : IDL.Func([IDL.Nat32, IDL.Text], [IDL.Bool], []),
     'filter_tunes' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Int32],
         [IDL.Vec(Tuneinfo), IDL.Int32],
@@ -100,7 +101,16 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'update_session' : IDL.Func(
-        [IDL.Nat32, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [
+          IDL.Nat32,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+        ],
         [IDL.Bool],
         [],
       ),

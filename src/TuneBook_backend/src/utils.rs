@@ -12,6 +12,7 @@ use crate::utils::ic_cdk::api;
 const TUNE_DB_INIT: &str = include_str!("./tune_db.json");
 
 
+
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::storable::Bound;
 use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, Storable};
@@ -120,6 +121,8 @@ pub async fn init() {
 }
     */
 
+
+
 // Initialize tunes from tune_db.json
 pub async fn init() {
     ic_cdk::setup();
@@ -165,6 +168,8 @@ pub fn authentication(principal: String) -> Option<types::Profile> {
     })
 }
 
+
+/*
 pub async fn update_profile(
     principal: String,
     username: String,
@@ -172,9 +177,13 @@ pub async fn update_profile(
     pob: String,
     instruments: String,
 ) -> types::Profile {
+
     PROFILE_STORE.with(|profile_store| {
+       
         if profile_store.borrow().get(&principal).is_some() {
+
             let mut new_profile = profile_store.borrow().get(&principal).unwrap().clone();
+
             new_profile.username = username;
             new_profile.avatar = avatar;
             new_profile.pob = pob;
@@ -205,22 +214,62 @@ pub async fn update_profile(
         }
     })
 }
+*/
 
-/*
-pub fn get_original_tune_list(page_number: i32) -> (Vec<String>, i32) {
-    TUNE_STORE.with(|tune_store| {
-        let res: Vec<String> = tune_store
-            .borrow()
-            .iter()
-            .skip(page_number as usize * 15)
-            .enumerate()
-            .filter(|(index, _)| index.clone() < 15)
-            .map(|(_, (_, data))| data.title.clone())
-            .collect();
-        (res, tune_store.borrow().len() as i32)
-    })
-}
-    */
+
+pub async fn update_profile(
+    principal: String,
+    username: String,
+    avatar: Vec<u8>,
+    pob: String,
+    instruments: String,
+) -> types::Profile {
+    PROFILE_STORE.with(|profile_store| {
+        let store = profile_store.borrow();
+
+        // Check for username uniqueness
+        if store.iter().any(|(_, profile)| profile.username == username && profile.principal != principal) {
+            panic!("Username '{}' is already taken", username); // You can handle this differently
+        }
+        
+        drop(store);
+
+        // If profile exists, update it
+        if profile_store.borrow().get(&principal).is_some() {
+
+            let mut new_profile = profile_store.borrow().get(&principal).unwrap().clone();
+
+            new_profile.username = username;
+            new_profile.avatar = avatar;
+            new_profile.pob = pob;
+            new_profile.instruments = instruments;
+            profile_store.borrow_mut().insert(principal, new_profile.clone());
+
+            println!("Created new profile for principal: ");
+            new_profile
+        } else {
+            // Otherwise, create a new profile
+            let new_profile = types::Profile {
+                principal: principal.clone(),
+                username,
+                avatar,
+                pob,
+                instruments,
+                friends: vec![],
+                incoming_fr: vec![],
+                outcoming_fr: vec![],
+            };
+            profile_store.borrow_mut().insert(principal, new_profile.clone());
+
+            println!("Created new profile for principal: ");
+            new_profile
+        }
+    }
+)}
+
+
+
+
 
 // Function to get a paginated list of original tunes
 pub fn get_original_tune_list(page_number: i32) -> (Vec<String>, i32) {
@@ -238,19 +287,6 @@ pub fn get_original_tune_list(page_number: i32) -> (Vec<String>, i32) {
     })
 }
     
-/*
-pub fn get_original_tune(title: String) -> String {
-    TUNE_STORE.with(|tune_store| {
-        if tune_store.borrow().get(&title).is_some() {
-            // tune_store.borrow().get(&title).unwrap().tune_data.clone()
-            let selected_tune = tune_store.borrow_mut().get(&title).unwrap();
-            selected_tune.tune_data.clone()
-        } else {
-            String::from("not found")
-        }
-    })
-}
-*/
 
 pub fn get_original_tune(title: String) -> String {
     TUNE_STORE.with(|tune_store| {
@@ -310,6 +346,7 @@ pub fn get_user_tune(principal: String, title: String) -> String {
     })
 }
 
+
 pub async fn add_tune(
     principal: String,
     title: String,
@@ -340,6 +377,43 @@ pub async fn add_tune(
         true
     })
 }
+    /*
+
+    pub async fn add_tune(
+        principal: String,
+        username: String,  // Pass the username along with the principal
+        title: String,
+        tune_data: String,
+        origin: bool,
+    ) -> bool {
+        TUNE_STORE.with(|tune_store| {
+            let mut principals: Vec<String> = vec![];
+            if tune_store.borrow().get(&title).is_some() {
+                let prev_tune = tune_store.borrow().get(&title).unwrap().clone();
+                if prev_tune.principals.contains(&principal) {
+                    return false;
+                }
+    
+                principals = prev_tune.principals;
+            }
+    
+            principals.push(principal);
+    
+            let new_tune = types::Tune {
+                origin,
+                title,
+                tune_data,
+                timestamp: ic_cdk::api::time(),
+                principals,
+                added_by: Some(username),  // Set the username for new tunes
+            };
+            tune_store.borrow_mut().insert(new_tune.title.clone(), new_tune);
+            true
+        })
+    }
+    
+*/
+
 
 pub async fn update_tune(
     principal: String,
@@ -367,6 +441,36 @@ pub async fn update_tune(
         true
     })
 }
+    
+/*
+pub async fn update_tune(
+    principal: String,
+    title: String,
+    tune_data: String,
+    origin: bool,
+) -> bool {
+    TUNE_STORE.with(|tune_store| {
+        if tune_store.borrow().get(&title).is_none() {
+            return false;
+        }
+        let prev_tune = tune_store.borrow().get(&title).unwrap().clone();
+        if !prev_tune.principals.contains(&principal) {
+            return false;
+        }
+
+        let updated_tune = types::Tune {
+            origin,
+            title,
+            tune_data,
+            timestamp: ic_cdk::api::time(),
+            principals: prev_tune.principals,
+            added_by: prev_tune.added_by, // Preserve the original added_by value
+        };
+        tune_store.borrow_mut().insert(updated_tune.title.clone(), updated_tune);
+        true
+    })
+}
+*/
 
 pub fn get_friends(principal: String) -> Vec<types::Friend> {
     PROFILE_STORE.with(|profile_store| {
@@ -570,50 +674,6 @@ pub fn filter_tunes(
     })
 }
 
-/*
-pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
-    PROFILE_STORE.with(|profile_store| {
-        let my_profile = profile_store.borrow().get(&my_principal).unwrap().clone();
-        let outcoming_principals: Vec<String> = my_profile.outcoming_fr
-            .iter()
-            .map(|friend| friend.principal.clone())
-            .collect();
-
-        let incoming_principals: Vec<String> = my_profile.incoming_fr
-            .iter()
-            .map(|friend| friend.principal.clone())
-            .collect();
-
-        let res: Vec<types::Friend> = profile_store
-            .borrow()
-            .iter()
-            .filter(|(_, profile)| 
-                profile.username.to_lowercase().contains(&filter.as_str().to_lowercase()) &&
-                profile.principal != my_profile.principal &&
-                !my_profile.friends.contains(&profile.principal) &&
-                !outcoming_principals.contains(&profile.principal) &&
-                !incoming_principals.contains(&profile.principal)
-            )
-            .map(|(principal, profile)| {
-                let user = types::Friend {
-                    principal: principal.clone(),
-                    avatar: profile.avatar.clone(),
-                    username: profile.username.clone(),
-                };
-                user
-            })
-            .collect();
-        let result: Vec<types::Friend> = res
-            .iter()
-            .skip(page_num as usize * 15 as usize)
-            .enumerate()
-            .filter(|(index, _)| index.clone() < 15 as usize)
-            .map(|(_, user)| user.clone())
-            .collect();
-        (result, res.len() as i32)
-    })
-}
-    */
 
     pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
         PROFILE_STORE.with(|profile_store| {
@@ -741,23 +801,63 @@ pub fn add_session(principal: String, username: String, name: String, location: 
 }
 
 
-pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+pub fn update_session(
+    id: u32,
+    principal: String,
+    name: String,
+    location: String,
+    daytime: String,
+    contact: String,
+    comment: String,
+    recurring: String,  // Added recurring field
+) -> bool {
     SESSION_STORE.with(|session_store| {
+        // Check if the session exists
         if session_store.borrow().get(&id).is_none() {
             return false;
         }
 
+        // Retrieve and clone the session
         let mut updated_session = session_store.borrow().get(&id).unwrap().clone();
+
+        // Verify the principal matches the session owner
         if updated_session.principal != principal {
             return false;
         }
 
+        // Update the session fields
         updated_session.name = name;
         updated_session.location = location;
         updated_session.daytime = daytime;
         updated_session.contact = contact;
         updated_session.comment = comment;
+        updated_session.recurring = recurring;  // Update the recurring field
+
+        // Insert the updated session back into the session store
         session_store.borrow_mut().insert(id, updated_session);
         true
     })
 }
+
+pub fn delete_session(id: u32, principal: String) -> bool {
+    SESSION_STORE.with(|session_store| {
+        let mut store = session_store.borrow_mut();
+
+        if let Some(session) = store.get(&id) {
+            // Check if the session belongs to the principal trying to delete it
+            if session.principal == principal {
+                store.remove(&id);  // Delete the session
+                return true;        // Successfully deleted
+            } else {
+                ic_cdk::println!("Unauthorized delete attempt by {}", principal);
+                return false;       // Unauthorized attempt
+            }
+        } else {
+            ic_cdk::println!("Session with ID {} not found", id);
+            return false;           // Session not found
+        }
+    })
+}
+
+
+

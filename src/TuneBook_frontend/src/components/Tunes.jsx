@@ -135,6 +135,7 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
           displayPlay: true,
           displayProgress: true,
           displayWarp: true,
+          displayVolume: true,
         });
       } catch (error) {
         console.error("Error initializing or playing the tune", error);
@@ -278,12 +279,26 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
               onClick={() => onSelectTune(tune)}
             >
               <div className="tune-details">
-                <p className="tune-title">{tune.title.replaceAll(".abc", "")}</p>
+              <p className="tune-title">
+              <span className="play-icon-circle">
+                <svg
+                  className="play-icon"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M8 5v10l8-5z" /> 
+                </svg>
+              </span>
+              {tune.title.split("_")[0]}
+            </p>
+
+
                 <p className="tune-id">{tune.title.split("_")[1]}</p>
                 <button
                   className="add-tune-button"
                   onClick={() => handleAddTune(tune)}
-                  disabled={userTunes.includes(tune.title)}  // Disable button if already added
+                  disabled={userTunes.includes(tune.title)}  
                 >
                   {userTunes.includes(tune.title) ? "Added" : "+ Add to My Tunebook"}
                 </button>
@@ -324,7 +339,21 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
           {currentLibrary.versions.map((tune, idx) => (
             <div key={idx} className="tune-card" onClick={() => onSelectTune(tune)}>
               <div className="tune-details">
-                <p className="tune-title">{tune.title.replaceAll(".abc", "")}</p>
+                
+                <p className="tune-title">
+                <span className="play-icon-circle">
+                  <svg
+                    className="play-icon"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M8 5v10l8-5z" /> 
+                  </svg>
+                </span>
+                {tune.title.replaceAll(".abc", "")}
+              </p>
+
                 <p className="tune-id">{tune.title.split("_")[1]}</p>
                 <button
                   className="add-tune-button"
