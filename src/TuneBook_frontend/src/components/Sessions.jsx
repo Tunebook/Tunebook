@@ -418,6 +418,35 @@ useEffect(() => {
   }, [debouncedTerm, sessions, pageNum]);
   
 
+  const handleDeleteSession = async (sessionId) => {
+    if (!currentPrincipal) {
+      alert("You must be logged in to delete a session.");
+      return;
+    }
+  
+    try {
+      const success = await actor.delete_session(sessionId, currentPrincipal);
+      if (success) {
+        // Update the sessions state by removing the deleted session
+        setSessions((prevSessions) =>
+          prevSessions.filter((session) => session.id !== sessionId)
+        );
+        setFilteredSessions((prevFiltered) =>
+          prevFiltered.filter((session) => session.id !== sessionId)
+        );
+        alert("Session deleted successfully!");
+      } else {
+        alert("Failed to delete session. You may not have permission.");
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      alert("Error deleting session. Please try again.");
+    }
+  };
+  
+
+
+
 
  // Handle Pagination Controls
  const handleNextPage = () => {
@@ -437,6 +466,8 @@ useEffect(() => {
 const handlePageChange = (selectedPage) => {
     setPageNum(selectedPage.selected);  // Update the page number based on the user's selection
   };
+
+
 
 // -------------------------------------------------------- //
 // -------------------------------------------------------- //
@@ -484,6 +515,18 @@ const handlePageChange = (selectedPage) => {
              <p>Contact: {session.contact}</p>
              <p>Comments: {session.comment}</p>
              <p>Recurring: {session.recurring}</p> 
+
+            
+              {/* Delete Button */}
+              <button 
+                className="delete-session-button" 
+                onClick={() => handleDeleteSession(session.id)}
+              >
+                🗑️
+              </button>
+
+
+
            </div>
          ))
 

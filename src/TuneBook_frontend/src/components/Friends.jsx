@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ABCJS from 'abcjs';  // Import ABCJS
 import 'abcjs/abcjs-audio.css';
 import Modal from 'react-modal';
+import FriendRequests from './Request';
 
 
 
@@ -39,10 +40,22 @@ function Friends({ actor, currentPrincipal }) {
   // Add Tune
   const [showAddTuneModal, setShowAddTuneModal] = useState(false);
   const [newTuneTitle, setNewTuneTitle] = useState('');
-  const [newTuneData, setNewTuneData] = useState('');
   const [newTuneOrigin, setNewTuneOrigin] = useState(false);
 
+  const [validationError, setValidationError] = useState("");
+  const [newTuneData, setNewTuneData] = useState(`X: 1
+T: Tune Title
+Z: Composer (optional)
+S: Source or link (optional)
+R: Rhythm (e.g., jig, reel)
+M: 4/4
+K: D
 
+abc def | gfe dcB | ...`);
+
+
+
+  
 
 
 
@@ -67,8 +80,6 @@ const fetchMyProfileAndTunes = async (page = 0) => {
 
 
       const [tuneList, totalCount] = await actor.get_user_tune_list(currentPrincipal, page);
-        const groupedTunes = groupLibraryTunes(tuneList);
-       setLibraryTunes(groupedTunes.library);
       setMyTunes(tuneList);
       setTotalTunes(totalCount);
     }
@@ -125,7 +136,6 @@ const groupLibraryTunes = (tunes) => {
   // Fetch current friends
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
-  // Fetch current friends
 const fetchFriends = async () => {
   try {
     const result = await actor.get_friends(currentPrincipal);
@@ -159,27 +169,33 @@ const fetchFriends = async () => {
   
 
 
-  // Function to send a friend request
-const sendFriendRequest = async (receiverPrincipal) => {
-  try {
-    if (!currentPrincipal) {
-      console.error("User is not logged in.");
-      return;
-    }
 
-    // Call backend function to send a friend request
-    const result = await actor.send_friend_request(currentPrincipal, receiverPrincipal);
+  const sendFriendRequest = async (receiverPrincipal) => {
+    try {
+      if (!currentPrincipal) {
+        console.error("User is not logged in.");
+        return;
+      }
+  
+      // Call backend function to send a friend request
+      const result = await actor.send_friend_request(currentPrincipal, receiverPrincipal);
+  
+      if (result) {
+        console.log("Friend request sent successfully!");
+  
+        setSentRequests((prevSentRequests) => [
+          ...prevSentRequests,
+          { principal: receiverPrincipal, username: result.username, avatar: result.avatar },
+        ]);
 
-    if (result) {
-      console.log("Friend request sent successfully!");
-      setSentRequests([...sentRequests, result]); // Update the sent requests list
-    } else {
-      console.log("Friend request failed or already exists.");
+      } else {
+        console.log("Friend request failed or already exists.");
+      }
+    } catch (error) {
+      console.error("Failed to send friend request:", error);
     }
-  } catch (error) {
-    console.error("Failed to send friend request:", error);
-  }
-};
+  };
+  
 
 
 // Fetch friend's profile by principal
@@ -217,9 +233,6 @@ const fetchFriendProfile = async (principal) => {
   }
 };
 
-
-
-
    // Function to accept a friend request
    const acceptFriendRequest = async (senderPrincipal) => {
     try {
@@ -253,7 +266,6 @@ const fetchFriendProfile = async (principal) => {
     }
   };
 
-
 // Display selected friend's profile and their tunes
 const displayFriendProfile = async (friend) => {
   try {
@@ -270,8 +282,6 @@ const displayFriendProfile = async (friend) => {
     console.error('Failed to fetch friend profile and tunes:', error);
   }
 };
-
-
 
 
 
@@ -318,10 +328,6 @@ const handleFriendRequestsClick = () => {
     }
   }, [searchTerm]);
 
-
-
-
-
 // Helper function to convert Uint8Array to Base64 string
 const convertUint8ArrayToBase64 = (uint8Array) => {
   if (uint8Array && uint8Array.byteLength) {
@@ -330,43 +336,84 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     for (let i = 0; i < len; i++) {
       binary += String.fromCharCode(uint8Array[i]);
     }
-    return window.btoa(binary); // Converts binary to Base64 string
+    return window.btoa(binary); 
   } else {
     console.warn("Invalid Uint8Array passed to convertUint8ArrayToBase64");
-    return ''; // Return an empty string if no valid data is passed
+    return ''; 
   }
 };
 
-// Open and close the Add Tune modal
-const toggleAddTuneModal = () => setShowAddTuneModal(!showAddTuneModal);
 
-// Submit handler for adding a new tune
-const handleAddTuneSubmit = async (e) => {
-  e.preventDefault();
-  if (!newTuneTitle || !newTuneData) {
-    alert('Please fill in all fields.');
-    return;
-  }
+  // Toggle Add Tune Modal
+  const toggleAddTuneModal = () => {
+    setShowAddTuneModal(!showAddTuneModal);
+    setValidationError(""); // Clear validation error when modal is toggled
+  };
 
-  try {
-    const success = await actor.add_tune(currentPrincipal, newTuneTitle, newTuneData, newTuneOrigin);
-    if (success) {
-      alert('Tune added successfully!');
-      setShowAddTuneModal(false); // Close modal on success
-      setNewTuneTitle('');
-      setNewTuneData('');
-      setNewTuneOrigin(false);
-      fetchMyProfileAndTunes(); // Refresh the user's tunes list
-    } else {
-      alert('Tune with this title already exists.');
+  // ABCJS live preview effect
+  useEffect(() => {
+    if (showAddTuneModal) {
+      ABCJS.renderAbc("abc-preview", newTuneData || abcTemplate);
     }
-  } catch (error) {
-    console.error('Error adding tune:', error);
-    alert('Failed to add tune. Please try again.');
-  }
-};
+  }, [newTuneData, showAddTuneModal]);
 
 
+
+// Validation function for ABC notation format
+  const validateABCNotation = (abc) => {
+    const hasX = abc.match(/^X:\s*\d+/m);
+    const hasT = abc.match(/^T:\s*.+/m);
+    const hasK = abc.match(/^K:\s*.+/m);
+    return hasX && hasT && hasK;
+  };
+
+
+  // Handle Add Tune Submission with validation
+  const handleAddTuneSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate ABC Notation Format
+    if (!validateABCNotation(newTuneData)) {
+      setValidationError("Invalid ABC notation. Ensure it includes 'X:', 'T:', and 'K:' fields.");
+      return;
+    }
+
+    try {
+      const modifiedTitle = `${newTuneTitle}_+_${myProfile.username}`;
+
+      const success = await actor.add_tune(
+        currentPrincipal,
+       `${newTuneTitle}_+_${myProfile.username}`,  
+        newTuneData,
+        false  
+      );
+
+      if (success) {
+        alert("Tune added successfully!");
+        fetchMyProfileAndTunes();
+
+
+
+        setValidationError("");  
+        setNewTuneTitle("");
+        setNewTuneData(`X: 1
+T: Tune Title
+Z: Composer (optional)
+S: Source or link (optional)
+R: Rhythm (e.g., jig, reel)
+M: 4/4
+K: D
+
+abc def | gfe dcB | ...`);  
+        toggleAddTuneModal();  
+      } else {
+        alert("A tune with this title already exists.");
+      }
+    } catch (error) {
+      console.error("Error adding tune:", error);
+      alert("Failed to add tune. Please try again.");
+    }
+  };
 
 
 
@@ -445,26 +492,6 @@ const handleAddTuneSubmit = async (e) => {
     if(tune.tune_data) {
       iniABCJS(tune.tune_data);  // Initialize ABCJS player
     }
-  };
-
-  // Render the user's saved tunes with ABCJS playback option
-  const renderMyTunes = () => {
-    if (myTunes.length === 0) {
-      return <p>You have no tunes saved yet.</p>;
-    }
-
-    return (
-      <div className="tunes-lists-container">
-      <ul>
-        {myTunes.map((tune, index) => (
-          <li key={index} onClick={() => onSelectTune(tune)}>
-            <p><strong>{tune.title} </strong> </p>
-            {/* Optional: Add a button or click handler to play the tune */}
-          </li>
-        ))}
-      </ul>
-      </div>
-    );
   };
 
   // Define default profile placeholder data
@@ -640,55 +667,59 @@ const handleAddTuneSubmit = async (e) => {
           <p>Instruments: {myProfile.instruments || 'None listed'}</p>
 
         
-          <button onClick={toggleAddTuneModal}>
+          <button  className="add-new-tune"
+            onClick={toggleAddTuneModal}>
               Add Tune
             </button>
           
 
-          {/* Add Tune Modal */}
             <Modal
-              isOpen={showAddTuneModal}
-              onRequestClose={toggleAddTuneModal}
-              contentLabel="Add Tune"
-              ariaHideApp={false}
-              className="add-tune-modal"
-              overlayClassName="modal-overlay"
-            >
-              <h2>Add New Tune</h2>
-              <form onSubmit={handleAddTuneSubmit}>
-                <label>
-                  Title:
-                  <input
-                    type="text"
-                    value={newTuneTitle}
-                    onChange={(e) => setNewTuneTitle(e.target.value)}
-                    required
-                  />
-                </label>
-                <label>
-                  Tune Data (ABC Notation):
-                  <textarea
-                    value={newTuneData}
-                    onChange={(e) => setNewTuneData(e.target.value)}
-                    required
-                  />
-                </label>
-                <label>
-                  Origin:
-                  <input
-                    type="checkbox"
-                    checked={newTuneOrigin}
-                    onChange={(e) => setNewTuneOrigin(e.target.checked)}
-                  />
-                  Original Composition
-                </label>
-                <button type="submit">Save Tune</button>
-                <button type="button" onClick={toggleAddTuneModal}>
-                  Cancel
-                </button>
-              </form>
-            </Modal>
+        isOpen={showAddTuneModal}
+        onRequestClose={toggleAddTuneModal}
+        contentLabel="Add Tune"
+        ariaHideApp={false}
+        className="add-tune-modal"
+        overlayClassName="modal-overlay"
+      >
+        <h2>Add New Tune</h2>
+        <form onSubmit={handleAddTuneSubmit}>
+          <label>
+            Title:
+            <input
+              type="text"
+              value={newTuneTitle}
+              onChange={(e) => setNewTuneTitle(e.target.value)}
+              required
+            />
+          </label>
 
+          <label>
+            Tune Data (ABC Notation):
+            <textarea
+              value={newTuneData}
+              onChange={(e) => setNewTuneData(e.target.value)}
+              rows="12" 
+              required
+            />
+          </label>
+          <p className="abc-instructions">
+            Enter ABC notation. Ensure it includes at least an "X:", "T:", and "K:" field.
+          </p>
+
+          {validationError && <p className="error-message">{validationError}</p>}
+
+          <button type="submit">Save Tune</button>
+          <button type="button" onClick={toggleAddTuneModal}>
+            Cancel
+          </button>
+        </form>
+
+        {/* //Preview area for the rendered sheet music 
+        <h3>ABC Notation Preview:</h3>
+        <div id="abc-preview"></div>
+
+        */}
+            </Modal>
 
 
            {/* Render saved tunes */}
@@ -717,21 +748,43 @@ const handleAddTuneSubmit = async (e) => {
         {/* Display the filtered tunes */}
         <div className="tune-listF">
           {filteredTunes.length > 0 ? (
-            filteredTunes.map((tune, index) => (
-              <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
-                <div className="tune-detailsF">
-                  <h3 className="tune-titleF">{tune.title}</h3>
-                  
+            filteredTunes.map((tune, index) => {
+              const [title, username] = tune.title.split("_+_"); // Split title to get username
+              return (
+                <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
+                  <div className="tune-detailsF">
+
+            <h3 className="tune-titleF">
+              <span className="play-icon-circleF">
+
+                <svg
+                  className="play-iconF"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+
+                  <path d="M8 5v10l8-5z" /> 
+                </svg>
+              </span>
+
+              {tune.title.split("_")[0]}</h3>
+
+                    <p className="tune-idF">
+                      Added by: {tune.title.split("_+_")[1] || "default"}
+                    </p>
+
+
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <p>No tunes found.</p>
           )}
-        </div>
-        </div>
-      
+          </div>
 
+        </div>
             {/* Tune Details with Tabs */}
               {currentTuneData && (
               <div className="tune-detail-view">
@@ -802,8 +855,7 @@ const handleAddTuneSubmit = async (e) => {
 
 
       </div>   
-        
-
+      
 
       ) : selectedFriendProfile ? (
     
@@ -864,7 +916,25 @@ const handleAddTuneSubmit = async (e) => {
             tunesToDisplay.map((tune, index) => (
               <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
                 <div className="tune-detailsF">
-                  <h3 className="tune-titleF">{tune.title}</h3>
+                <h3 className="tune-titleF">
+              <span className="play-icon-circleF">
+
+                <svg
+                  className="play-iconF"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+
+                  <path d="M8 5v10l8-5z" /> 
+                </svg>
+              </span>
+
+              {tune.title.split("_")[0]}</h3>
+
+         <p className="tune-idF">
+             Added by: {tune.title.split("_+_")[1] || "default"}
+         </p>
                   </div>
                   </div>
             ))
@@ -946,52 +1016,19 @@ const handleAddTuneSubmit = async (e) => {
             </div>
 
     
-      ) :  showFriendRequests ? (
-          <div className="friend-requests-view">
-            <h2>Friend Requests</h2>
-            <h3>Received Requests:</h3>
-            {receivedRequests.length > 0 ? (
-              receivedRequests.map((request, index) => (
-                <div key={index} className="friend-request-item">
-                  <img
-                src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`}
-                alt="Avatar"
-                style={{ width: '30px', height: '30px', borderRadius: '15px' }}
-              />
-                  <p>{request.username}</p>
-                  <button onClick={() => acceptFriendRequest(request.principal)}>Accept</button>
-                  <button onClick={() => cancelFriendRequest(request.principal)}>Reject</button>
-                </div>
-              ))
-            ) : (
-              <p>No received friend requests.</p>
-            )}
-            <h3>Sent Requests:</h3>
-            {sentRequests.length > 0 ? (
-              sentRequests.map((request, index) => (
-                <div key={index} className="friend-request-item">
-                  <img
-                src={`data:image/png;base64,${convertUint8ArrayToBase64(request.avatar)}`}
-                alt="Avatar"
-                style={{ width: '30px', height: '30px', borderRadius: '15px' }}
-              />
-                  <p>{request.username}</p>
-                  <button onClick={() => cancelFriendRequest(request.principal)}>Cancel Request</button>
-                </div>
-              ))
-
-            ) : (
-              <p>No sent friend requests.</p>
-            )}
-          </div>
+        ) : showFriendRequests ? (
+          <FriendRequests
+            sentRequests={sentRequests}
+            receivedRequests={receivedRequests}
+            acceptFriendRequest={acceptFriendRequest}
+            cancelFriendRequest={cancelFriendRequest}
+          />
         ) : (
-
           renderDefaultProfile()
         )}
-      </div>
-      
-    </div>
-  );
+        </div>
+        </div>
+);
 }
 
 export default Friends;

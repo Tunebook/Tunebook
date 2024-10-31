@@ -292,9 +292,11 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
               </span>
               {tune.title.split("_")[0]}
             </p>
+            
+            <p className="tune-id">
+              Added by: {tune.title.split("_+_")[1] || "default"}
+            </p>
 
-
-                <p className="tune-id">{tune.title.split("_")[1]}</p>
                 <button
                   className="add-tune-button"
                   onClick={() => handleAddTune(tune)}
@@ -351,10 +353,11 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
                     <path d="M8 5v10l8-5z" /> 
                   </svg>
                 </span>
-                {tune.title.replaceAll(".abc", "")}
+                {tune.title.split("_")[0]}
               </p>
 
                 <p className="tune-id">{tune.title.split("_")[1]}</p>
+                <p className="tune-id">{tune.title.split("_+_")[1]}</p>
                 <button
                   className="add-tune-button"
                   onClick={() => handleAddTune(tune)}

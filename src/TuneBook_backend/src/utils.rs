@@ -39,6 +39,7 @@ impl Storable for types::Profile {
     };
 }
 
+
 impl Storable for types::Tune {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
         Cow::Owned(Encode!(self).unwrap())
@@ -89,37 +90,6 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(3)))
     ));
 }
-    
-
-/*
-pub async fn init() {
-    ic_cdk::setup();
-    let parsed: Value = serde_json::from_str(TUNE_DB_INIT).expect("parse error!");
-    TUNE_STORE.with(|tune_store| {
-        if tune_store.borrow().len() == 0 {
-            let btree_map = if let Value::Object(obj) = parsed {
-                obj.into_iter()
-                    .map(|(k, v)| (k, v.as_str().unwrap().to_string()))
-                    .collect()
-            } else {
-                eprintln!("Expected a JSON object");
-                BTreeMap::new() // Return an empty map if not an object
-            };
-
-            for (key, value) in btree_map.iter() {
-                let new_tune = types::Tune {
-                    origin: true,
-                    title: key.clone(),
-                    tune_data: value.clone(),
-                    timestamp: ic_cdk::api::time(),
-                    principals: vec![]
-                };
-                tune_store.borrow_mut().insert(key.clone(), new_tune);
-            } 
-        }
-    });
-}
-    */
 
 
 
@@ -167,54 +137,6 @@ pub fn authentication(principal: String) -> Option<types::Profile> {
         }
     })
 }
-
-
-/*
-pub async fn update_profile(
-    principal: String,
-    username: String,
-    avatar: Vec<u8>,
-    pob: String,
-    instruments: String,
-) -> types::Profile {
-
-    PROFILE_STORE.with(|profile_store| {
-       
-        if profile_store.borrow().get(&principal).is_some() {
-
-            let mut new_profile = profile_store.borrow().get(&principal).unwrap().clone();
-
-            new_profile.username = username;
-            new_profile.avatar = avatar;
-            new_profile.pob = pob;
-            new_profile.instruments = instruments;
-            profile_store
-                .borrow_mut()
-                .insert(principal, new_profile.clone());
-
-           println!("Updated profile for principal: ");
-            new_profile
-        } else {
-            let new_profile = types::Profile {
-                principal: principal.clone(),
-                username,
-                avatar,
-                pob,
-                instruments,
-                friends: vec![],
-                incoming_fr: vec![],
-                outcoming_fr: vec![],
-            };
-            profile_store
-                .borrow_mut()
-                .insert(principal, new_profile.clone());
-
-                println!("Created new profile for principal: "); // Log new profile creation
-            new_profile
-        }
-    })
-}
-*/
 
 
 pub async fn update_profile(
@@ -377,42 +299,7 @@ pub async fn add_tune(
         true
     })
 }
-    /*
 
-    pub async fn add_tune(
-        principal: String,
-        username: String,  // Pass the username along with the principal
-        title: String,
-        tune_data: String,
-        origin: bool,
-    ) -> bool {
-        TUNE_STORE.with(|tune_store| {
-            let mut principals: Vec<String> = vec![];
-            if tune_store.borrow().get(&title).is_some() {
-                let prev_tune = tune_store.borrow().get(&title).unwrap().clone();
-                if prev_tune.principals.contains(&principal) {
-                    return false;
-                }
-    
-                principals = prev_tune.principals;
-            }
-    
-            principals.push(principal);
-    
-            let new_tune = types::Tune {
-                origin,
-                title,
-                tune_data,
-                timestamp: ic_cdk::api::time(),
-                principals,
-                added_by: Some(username),  // Set the username for new tunes
-            };
-            tune_store.borrow_mut().insert(new_tune.title.clone(), new_tune);
-            true
-        })
-    }
-    
-*/
 
 
 pub async fn update_tune(
@@ -442,35 +329,6 @@ pub async fn update_tune(
     })
 }
     
-/*
-pub async fn update_tune(
-    principal: String,
-    title: String,
-    tune_data: String,
-    origin: bool,
-) -> bool {
-    TUNE_STORE.with(|tune_store| {
-        if tune_store.borrow().get(&title).is_none() {
-            return false;
-        }
-        let prev_tune = tune_store.borrow().get(&title).unwrap().clone();
-        if !prev_tune.principals.contains(&principal) {
-            return false;
-        }
-
-        let updated_tune = types::Tune {
-            origin,
-            title,
-            tune_data,
-            timestamp: ic_cdk::api::time(),
-            principals: prev_tune.principals,
-            added_by: prev_tune.added_by, // Preserve the original added_by value
-        };
-        tune_store.borrow_mut().insert(updated_tune.title.clone(), updated_tune);
-        true
-    })
-}
-*/
 
 pub fn get_friends(principal: String) -> Vec<types::Friend> {
     PROFILE_STORE.with(|profile_store| {

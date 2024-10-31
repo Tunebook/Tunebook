@@ -201,12 +201,7 @@ body {
 }
 
 .navbar-title {
-  //margin-left: 5px;
-  //font-size: 35px; /* Enlarged title */
-  //font-weight: bold;
-  //color: rgb(255, 255, 255);
-  //font-family: sans-serif;
-  //letter-spacing: normal;
+
   width: 200px;
   padding: 5px;
   height: 50px;
@@ -236,7 +231,6 @@ body {
   margin: 0 auto;
 }
 
-/* Title */
 .title {
   font-size: 30px;
   text-align: center;
@@ -245,7 +239,6 @@ body {
   //color: rgb(241, 236, 225);
 }
 
-/* Search and Filter */
 .search-filter {
   display: flex;
   justify-content: space-between;
@@ -280,7 +273,6 @@ body {
   color: #fff;
 }
 
-/* Tune List */
 .tune-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -353,6 +345,8 @@ body {
 .tune-id {
   font-size: 12px;
   color: #888;
+  //margin-left: 45px;
+  //margin-bottom:15px;
 }
 
 .add-tune-button {
@@ -509,8 +503,6 @@ body {
   
 }
 
-
-
 .abc-player-controls button {
   font-size: 18px;
   padding: 10px;
@@ -541,8 +533,6 @@ body {
   margin-right: 5px;
 }
 
-
-/* Pagination Wrapper */
 .pagination-wrapper {
   display: flex;
   justify-content: center;
@@ -551,7 +541,6 @@ body {
   margin-bottom: 10px;
 }
 
-/* Pagination Styles */
 .pagination {
   display: flex;
   justify-content: center;
@@ -623,7 +612,18 @@ body {
   padding: 30px;
 }
 
-/* Add Session Section */
+.add-session-button {
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  margin-bottom: 10px;
+  background-color: #122;
+  max-width: 400px;
+  padding: 15px;
+  border: 1px solid #fdfffe;
+
+}
+
 .add-session-section {
   background-color: #f1f1f1;
   padding: 20px;
@@ -668,8 +668,6 @@ button:hover {
   background-color: #06692f;
 }
 
-
-/* Session List Section */
 .sessions-container {
   padding: 50px;
 }
@@ -680,7 +678,6 @@ h1 {
   color: white;
 }
 
-/* Search Input */
 .search-input {
   flex: 1;
   width: 100%;
@@ -700,7 +697,7 @@ h1 {
   border-radius: 5px;
   border: 2px solid #58d289;
 }
-/* Sessions List */
+
 .sessions-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -737,8 +734,27 @@ h1 {
   flex-direction: column;
   justify-content: space-between;
   transition: background-color 0.2s;
-  border: 2px solid #58d289;;
+  border: 2px solid #58d289;
+  position: relative;
+
 }
+
+.delete-session-button {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  //background: none;
+  border: none;
+  background-color: rgb(158, 210, 183);
+  cursor: pointer;
+  font-size: 22px;
+  border: 2px solid #58d289;
+}
+
+.delete-session-button:hover {
+  background-color: rgb(184, 51, 51);
+}
+
 
 .session-card:hover {
   background-color: #58d289;
@@ -769,7 +785,6 @@ h1 {
   background-color: #06692f;
 }
 
-/* Add this CSS to your stylesheet */
 #map {
   height: 350px;
   margin-top: 10px;
@@ -781,8 +796,6 @@ h1 {
   z-index: 1;
 }
 
-
-/* Modal Styles */
 .modal {
   position: fixed;
   z-index: 1000;
@@ -814,7 +827,6 @@ select {
   margin: 10px 0;
   width: 100%;
 }
-
 
 .close-modal {
   position: absolute;
@@ -870,12 +882,6 @@ h2 {
 
 
 
-
-
-
-
-
-
 /* ------------------------------------------------------------- */
 /* ------------------------------------------------------------- */
 /* ------------------------------------------------------------- */
@@ -894,6 +900,7 @@ h2 {
   padding: 20px;
   height: 100vh; 
   margin-top: 10px;
+  margin-bottom: 20px;
 }
 
 .friends-list {
@@ -902,7 +909,6 @@ h2 {
   border-radius: 8px;
   overflow-y: auto; 
   //max-width: 400px;
-
 }
 
 .profile-view {
@@ -976,7 +982,27 @@ h2 {
 
 
 
+.add-new-tune {
+  background-color: rgb(28, 73, 73);
+  border: 1px solid #58d289;
+  box-shadow: 0 2px 4px rgba(122, 220, 197, 0.347);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  justify-self: center;
+  width: 30%; 
+  text-align: center;
+  margin-top: 30px;
+  font-size: large;
+}
 
+.add-new-tune:hover{
+  background-color: #58d289;
+}
 
 .add-tune-modal {
   position: absolute;
@@ -990,9 +1016,15 @@ h2 {
   background-color: #1b1b1b;
   color: white;
   border-radius: 10px;
-  max-width: 500px;
-  width: 90%;
+  max-width: 800px;
+  width: 100%;
+  margin-top: 20px;
+  margin-bottom: 20px;
   
+}
+
+.add-tune-modal h2 {
+  color: white;
 }
 
 .modal-overlay {
@@ -1026,7 +1058,7 @@ h2 {
   margin-bottom: 15px;
   padding: 30px;
   justify-content: left;
-  
+  margin-top: 5px;
 }
 
 .add-tune-modal form button {
@@ -1045,8 +1077,6 @@ h2 {
   background-color: #555;
 }
 
-
-
 .main-profile-content {
   background-color: #222;
   padding: 20px;
@@ -1058,27 +1088,31 @@ h2 {
 .profile-view h3 {
   margin-top: 25px;
   text-align: start;
-  //font-size: medium;
   font-size: 16px;
   font-weight: 90px;
   padding: 5px;
-  margin-left: 10px;
+  margin-left: 45px;
   margin-bottom: 5px;
+
   
 }
 
 .tunes-lists-container {
-  max-height: 500px; 
+  max-height: 520px; 
   overflow-y: auto; 
-  margin-top: 10px;
-  padding-right: 20px; 
+  margin-top: 20px;
+  padding-right: 25px; 
   background-color: #111;
-  padding-left: 20px;
+  padding-left: 25px;
   padding-top: 15px;
   padding-bottom: 20px;
   border-radius: 15px;
   text-align: start;
   margin-bottom: 15px;
+  border: 5px solid #000000;
+  margin-left: 50px;
+  margin-right: 50px;
+  margin-bottom: 20px;
 }
 
 
@@ -1090,6 +1124,7 @@ h2 {
 .tunes-lists-container::-webkit-scrollbar-thumb {
   background-color: #58d289;
   border-radius: 15px;
+  opacity: 5%;
 }
 
 .tunes-lists-container::-webkit-scrollbar-track {
@@ -1106,7 +1141,6 @@ h2 {
 
 .tune-cardF {
   background-color: #122;
-  padding: 5px;
   border-radius: 8px;
   box-shadow: 0 3px 8px rgba(122, 220, 197, 0.347);
   transition: background-color 0.3s ease, transform 0.3s ease;
@@ -1114,6 +1148,7 @@ h2 {
   border: 1px solid #58d289;
   margin-top: 10px;
   justify-content: space-between;
+  margin-right: 18px;
 }
 
 .tune-cardF:hover {
@@ -1124,23 +1159,55 @@ h2 {
 .tune-detailsF {
   display: flex;
   flex-direction: column;
-  align-items: flex-start; 
 }
 
 .tune-titleF {
   font-size: 12px;
   font-weight: bold;
   color: #fff;
-  margin: 0;
   font-size: small;
+  display: flex;
+  align-items: center;
+  gap: 15px
 }
 
+.tune-idF {
+  font-size: 12px;
+  color: #888;
+  margin-left: 45px;
+  margin-bottom:15px;
+}
+
+.play-icon-circleF {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+
+.play-icon-circleF:hover {
+  background-color: #1e90ff; 
+}
+
+.play-iconF {
+  width: 18px; 
+  height: 18px;
+
+}
 
 
 .tabs {
   margin-top: 10px;
-  width: 100%;
+  width: 97%;
   display: flex;
+  margin-left: 8px;
 }
 
 .tab-button {
@@ -1159,7 +1226,6 @@ h2 {
   border-radius: 5px;
 }
 
-/* Individual Tab */
 .tab {
   padding: 15px 30px;
   cursor: pointer;
@@ -1173,14 +1239,12 @@ h2 {
 
 }
 
-/* Active Tab Styling */
 .tab.active {
   background-color: #58d289;
   color: white;
   border-radius: 8px;
 }
 
-/* Main content for tab */
 .tab-content {
   padding: 20px;
   background-color: #222;
@@ -1188,7 +1252,6 @@ h2 {
   min-height: 300px;
 }
 
-/* Profile Avatar Styling */
 .profile-avatar {
   display: block;
   margin: 20px auto;
@@ -1255,32 +1318,26 @@ h2 {
   padding-left: 10px;
 }
 
-
-
-
 @media (max-width: 768px) {
   .friends-page {
-    grid-template-columns: 1fr; /* On smaller screens, stack the columns */
+    grid-template-columns: 1fr; 
     gap: 10px;
   }
 
   .friends-list {
-    height: auto; /* Ensure the friends list adapts to smaller screens */
+    height: auto; 
   }
 }
 
-
-/* Profile Section Styling */
 .profile-section {
   margin-top: 20px;
 }
 
-/* Input Styling */
 .profile-section input[type="text"] {
   width: 93%;
   padding: 10px 15px;
   font-size: 14px;
-  border: 1px solid #58d289; /* Use a color that matches your theme */
+  border: 1px solid #58d289; 
   border-radius: 8px;
   outline: none;
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
@@ -1294,13 +1351,11 @@ h2 {
 
 }
 
-
 .profile-section input[type="text"]:focus {
-  border-color: #45a049; /* Darken border on focus */
-  box-shadow: 0px 0px 8px rgba(69, 160, 73, 0.3); /* Add subtle shadow */
+  border-color: #45a049; 
+  box-shadow: 0px 0px 8px rgba(69, 160, 73, 0.3); 
 }
 
-/* Heading Styling */
 .profile-section h2 {
   color: #333;
   font-size: 24px;
@@ -1398,8 +1453,6 @@ h2 {
 }
 
 
-
-
 /* ------------------------------------------------------------- */
 /* ------------------------------------------------------------- */
 /* ------------------------------------------------------------- */
@@ -1430,14 +1483,12 @@ h2 {
   font-size: 24px;
 }
 
-/* Styling for the form fields */
 .create-profile-container form div {
   margin-bottom: 15px;
   background-color: #1b1b1b;
   color: white;
 }
 
-/* Label styling */
 .create-profile-container label {
   display: block;
   font-weight: 500;
@@ -1445,7 +1496,6 @@ h2 {
   margin-top: 15px;
 }
 
-/* Input fields styling */
 .create-profile-container input[type="text"],
 .create-profile-container input[type="file"] {
   width: 100%;
@@ -1462,7 +1512,6 @@ h2 {
   outline: none;
 }
 
-/* Button styling */
 .create-profile-container button {
   display: block;
   width: 100%;
@@ -1479,7 +1528,6 @@ h2 {
 .create-profile-container button:hover {
   background-color: #45b26b; 
 }
-
 
 .default-avatar-checkbox {
   display: flex;
@@ -1500,21 +1548,21 @@ h2 {
   width: 30px;
   height: 30px;
   background-color: white;
-  display: none; /* Hide native checkbox */
+  display: none; 
 }
 
 .custom-checkbox .checkbox-box {
   width: 160px;
   height: 160px;
-  border: 2px solid #58d289; /* Border color */
-  border-radius: 4px; /* Optional: rounded corners */
+  border: 2px solid #58d289;
+  border-radius: 4px; 
   position: relative;
   background-color: transparent;
 
 }
 
 .custom-checkbox input[type="checkbox"]:checked + .checkbox-box {
-  background-color: #58d289; /* Background when checked */
+  background-color: #58d289; 
   border-color: #58d289;
 }
 
@@ -1532,19 +1580,18 @@ h2 {
 }
 
 .custom-checkbox input[type="checkbox"]:checked + .checkbox-box::after {
-  opacity: 5; /* Show checkmark when checked */
+  opacity: 5; 
 }
 
 
-
-
-
-
-
-
-
-
-
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ----------- FOOTER AREA ------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
 
 
 /* Footer styling */
@@ -1699,15 +1746,6 @@ h2 {
 }
 
 
-
-
-
-
-
-
-
-
-
 // ------------------------------------------------------------ //
 // ------------------------------------------------------------ //
 // --------------------Loading Spinner   ---------------------- //
@@ -1741,30 +1779,57 @@ h2 {
   }
 }
 
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ---------------- Image carousel ----------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
 
+
+/* Styles for the carousel */
 .carousel-container {
-  width: 90%; 
-  margin: auto;
-  padding: 20px 0;
+  width: 80%;              /* Reduce the width slightly */
+  //max-width: 800px;        /* Limit the maximum width */
+  margin: 20px auto;       /* Centered with some spacing */
+  padding: 10px 0;
 }
 
 .carousel-slide {
-padding: 10px; 
-  
+  padding: 5px; 
 }
 
 .carousel-image {
-  width: 95%;            /* Full width of the container */
-  height: 600px;          /* Fixed height - adjust as needed */
-  object-fit: cover;      /* Ensures images cover the area without distortion */
+  width: 95%;             /* Full width of the container */
+  height: 450px;           /* Reduced height for a smaller appearance */
+  object-fit: cover;       /* Ensures images cover the area without distortion */
   border-radius: 10px;
-  //box-shadow: 0 6px 14px rgba(122, 220, 197, 0.347);
-  margin-top: 20px;
-  border: 1px solid #ffffff;;
+  box-shadow: 0 6px 14px rgba(122, 220, 197, 0.3);  /* Slightly transparent shadow */
+  border: 2px solid #58d289;
+}
+
+.slick-prev, .slick-next {
+  color: #000000;
+  z-index: 1;
+  //padding: 20px;
+
+}
+
+.slick-prev:hover, .slick-next:hover {
+  color: #ffd700; 
 }
 
 
-
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ----------- Feedback ---------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
 
 .feedback-form-wrapper {
   display: flex;
@@ -1774,24 +1839,16 @@ padding: 10px;
   padding: 20px; /* Adds spacing around the form */
 }
 
-
-
-
-
 .feedback-form-container {
   width: 100%;
   max-width: 550px;
-
   padding: 20px;
   border-radius: 10px;
   color: #ffffff;
   border: 1px solid #58d289;
   align-self: center;
   align-content: center;
-
-
   background-color: #122;
-
   box-shadow: 0 6px 14px rgba(122, 220, 197, 0.347);
   margin-bottom: 30px;
   margin-top: 25px;
@@ -1802,14 +1859,12 @@ padding: 10px;
   font-size: 24px;
   margin-bottom: 10px;
   color: #ffffff;
-
 }
 
 .feedback-form-container p {
   text-align: center;
   font-size: 14px;
   color: #ccc;
-  
 }
 
 .feedback-form-container label:nth-of-type(4) {
@@ -1851,10 +1906,6 @@ padding: 10px;
 
 }
 
-
-
-
-
 .feedback-form-container button:hover {
   background-color: #45a049;
 }
@@ -1864,7 +1915,6 @@ padding: 10px;
   margin-top: 10px;
   font-size: 14px;
 }
-
 
 .upload-box {
   border: 2px dashed #58d289;
@@ -1891,11 +1941,18 @@ padding: 10px;
 
 .file-select-button:hover {
   background-color: #58d289;
-
 }
 
 
 
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ----------- FAQ Container ----------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
 
 
 .faq-container-wrapper {
@@ -1928,6 +1985,14 @@ padding: 10px;
 }
 
 
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ----------- Privacy Policy ---------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
 
 
 .privacy-policy-container-wrapper {
@@ -1960,6 +2025,18 @@ padding: 10px;
   color: white;
 }
 
+
+
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ----------- Terms of service -------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+
+
 .terms-of-service-wrapper {
   display: flex;
   justify-content: center;
@@ -1989,6 +2066,16 @@ padding: 10px;
 .terms-of-service h2 {
   color: white;
 }
+
+
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ----------- Login ------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
+/* ------------------------------------------------------------- */
 
 
 

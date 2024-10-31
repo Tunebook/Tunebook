@@ -20,6 +20,11 @@ fn post_upgrade(time: u64) {
     init(time);
 }
 
+#[ic_cdk::update]
+pub async fn reload_tunes() {
+    utils::init().await;  // Reinitialize by loading tunes from tune_db.json
+}
+
 
 #[ic_cdk::update]
 async fn update_data() {
@@ -125,6 +130,5 @@ pub fn delete_session(id: u32, principal: String) -> bool {
 pub fn get_profile(principal: String) -> Option<types::Profile> {
     utils::get_profile(principal)
 }
-
 
 

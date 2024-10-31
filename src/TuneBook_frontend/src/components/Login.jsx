@@ -57,6 +57,7 @@ function Login({ setAuthClient, setCurrentAccount, setActor, setIsLoggedIn }) {
     }
   };
 
+
   const loginICP = async () => {
     if (!authClient) return;
     await authClient.login({
