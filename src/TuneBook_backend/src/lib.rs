@@ -4,7 +4,7 @@ mod types;
 #[ic_cdk::init]
 fn init(time: u64) {
     ic_cdk::spawn(async {
-        utils::init().await;  // Loading tunes from tune_db.json into the store
+        utils::init().await;  
     });
 
     ic_cdk_timers::set_timer(std::time::Duration::from_secs(time), || {
@@ -15,14 +15,9 @@ fn init(time: u64) {
 #[ic_cdk::post_upgrade]
 fn post_upgrade(time: u64) {
     ic_cdk::spawn(async {
-        utils::init().await;  // Reinitialize after upgrade
+        utils::init().await;  
     });
     init(time);
-}
-
-#[ic_cdk::update]
-pub async fn reload_tunes() {
-    utils::init().await;  // Reinitialize by loading tunes from tune_db.json
 }
 
 
@@ -37,8 +32,8 @@ fn authentication(principal: String) -> Option<types::Profile> {
 }
 
 #[ic_cdk::update]
-async fn update_profile(principal: String, username: String, pob: String, instrument: String, avatar: Vec<u8>) -> types::Profile {
-    utils::update_profile(principal, username, avatar, pob, instrument).await
+async fn update_profile(principal: String, username: String, pob: String, instruments: String, bio: Option<String>, avatar: Vec<u8>) -> types::Profile {
+    utils::update_profile(principal, username, pob, instruments, bio, avatar).await
 }
 
 #[ic_cdk::query]
@@ -91,10 +86,18 @@ pub async fn cancel_friend_request(sender: String, receiver: String) -> bool {
     utils::cancel_friend_request(sender, receiver).await
 }
 
+
 #[ic_cdk::query]
 pub fn filter_tunes(title:String, rithm: String, key: String, page_num: i32) -> (Vec<types::Tuneinfo>, i32) {
     utils::filter_tunes(title.as_str(), rithm.as_str(), key.as_str(), page_num)
 }
+    
+/*
+#[ic_cdk::query]
+pub fn filter_tunes(title: String, rithm: String, key: String, batch_start_index: i32, batch_size: i32) -> (Vec<types::Tuneinfo>, i32) {
+    utils::filter_tunes(title.as_str(), rithm.as_str(), key.as_str(), batch_start_index, batch_size)
+}
+*/
 
 #[ic_cdk::query]
 pub fn browse_people(principal: String, filter: String, page_num:i32) -> (Vec<types::Friend>, i32) {
@@ -117,8 +120,8 @@ pub fn add_session(principal: String, username: String, name: String, location: 
 }
 
 #[ic_cdk::update]
-pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String, recurring: String) -> bool {
-    utils::update_session(id, principal, name, location, daytime, contact, comment, recurring)
+pub fn update_session(id: u32, principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String, recurring: String) -> bool {
+    utils::update_session(id, principal, username, name, location, daytime, contact, comment, recurring)
 }
 
 #[ic_cdk::update]

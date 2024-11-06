@@ -130,7 +130,7 @@ body {
   margin-right: 20px;
   width: 100%;
   box-sizing: border-box;
-  box-shadow: 0 1px 4px #58d289;
+  box-shadow: 0 2px 1px #58d289;
 }
 
 .navbar-brand {
@@ -246,6 +246,48 @@ body {
   font-size: 12px;
   //border: 2px solid #58d289;
 }
+
+/*.select-filter {
+  width: 200px;
+  margin-right: 10px;
+  color: #fff;
+}
+
+
+.select-filter .css-1okebmr-indicatorSeparator {
+  display: none;
+}
+
+
+.select-filter .css-319lph-ValueContainer {
+  background-color: #222; 
+  border: 1px solid #58d289; 
+  color: #fff;
+}
+
+.select-filter .css-14el2xx-placeholder {
+  color: #888; 
+}
+
+
+.select-filter .css-26l3qy-menu {
+  background-color: #333; 
+  color: #fff; 
+  border: 1px solid #58d289; 
+}
+
+.select-filter .css-yt9ioa-option:hover {
+  background-color: #58d289; 
+  color: #000; 
+}
+
+
+.select-filter .css-9gakcf-option {
+  background-color: #58d289; 
+  color: #000; 
+}
+*/
+
 
 .search-input {
   flex: 1;
@@ -741,8 +783,8 @@ h1 {
 
 .delete-session-button {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
+  bottom: 20px;
+  right: 20px;
   //background: none;
   border: none;
   background-color: rgb(158, 210, 183);
@@ -753,6 +795,18 @@ h1 {
 
 .delete-session-button:hover {
   background-color: rgb(184, 51, 51);
+}
+
+.update-session-button {
+  position: absolute;
+  bottom: 20px;
+  right: 75px;
+  //background: none;
+  border: none;
+  background-color: rgb(158, 210, 183);
+  cursor: pointer;
+  font-size: 22px;
+  border: 2px solid #58d289;
 }
 
 
@@ -901,6 +955,7 @@ h2 {
   height: 100vh; 
   margin-top: 10px;
   margin-bottom: 20px;
+  //border: 1px solid #58d289;
 }
 
 .friends-list {
@@ -909,6 +964,7 @@ h2 {
   border-radius: 8px;
   overflow-y: auto; 
   //max-width: 400px;
+  border: 1px solid #58d289;
 }
 
 .profile-view {
@@ -916,7 +972,7 @@ h2 {
   padding: 10px;
   text-align: center;
   font-weight: bold;
-  
+  //border: 1px solid #58d289;
 }
 
 .my-profile-button {
@@ -1016,12 +1072,14 @@ h2 {
   background-color: #1b1b1b;
   color: white;
   border-radius: 10px;
-  max-width: 800px;
+  max-width: 850px;
   width: 100%;
-  margin-top: 20px;
-  margin-bottom: 20px;
+  //margin-top: 20px;
+  //margin-bottom: 20px;
   
 }
+
+
 
 .add-tune-modal h2 {
   color: white;
@@ -1035,6 +1093,7 @@ h2 {
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   z-index: 1000;
+
 }
 
 .add-tune-modal form label {
@@ -1083,6 +1142,31 @@ h2 {
   border-radius: 10px;
   overflow-y: auto;
   max-width: 100%;
+  border: 1px solid #58d289;
+}
+
+.profile-display {
+  border: 1px solid #58d289;
+  //display: flex;
+  display: grid;
+  grid-template-columns: 0.80fr 2fr; 
+  background-color: #111;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 40px;
+
+
+}
+
+.profile-details-display {
+  //border: 1px solid #58d289;
+  text-align: left;
+  padding-left: 10px;
+  line-height: 1.4;
+  letter-spacing: 1.1px;
+  color: white;
+  font-size: large;
+  font-weight: 100;
 }
 
 .profile-view h3 {
@@ -1296,27 +1380,30 @@ h2 {
   transform: scale(1.02); 
 }
 
-.request-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 20%;
- // margin-right: 10px;
-  //background-color: white;
-  color: #222;
-}
-
 .friend-request-item {
   display: flex;
   align-items: center;
+  //gap: 20px; /* Space between items */
   margin-bottom: 10px;
-  //background-color: white;
+  background-color: #122;
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid #58d289;
+  max-width: 400px;
+}
+
+.request-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
 }
 
 .friend-request-item p {
-  margin-right: 20px;
-  //background-color: white;
-  padding-left: 10px;
+  margin: 0;
+  padding: 0 10px;
+  flex-grow: 0.5; /* Push buttons to the right */
 }
+
 
 @media (max-width: 768px) {
   .friends-page {
@@ -1791,23 +1878,23 @@ h2 {
 
 /* Styles for the carousel */
 .carousel-container {
-  width: 80%;              /* Reduce the width slightly */
+  width: 95%;              /* Reduce the width slightly */
   //max-width: 800px;        /* Limit the maximum width */
   margin: 20px auto;       /* Centered with some spacing */
   padding: 10px 0;
 }
 
 .carousel-slide {
-  padding: 5px; 
+  padding: 10px; 
 }
 
 .carousel-image {
   width: 95%;             /* Full width of the container */
-  height: 450px;           /* Reduced height for a smaller appearance */
+  height: 500px;           /* Reduced height for a smaller appearance */
   object-fit: cover;       /* Ensures images cover the area without distortion */
   border-radius: 10px;
-  box-shadow: 0 6px 14px rgba(122, 220, 197, 0.3);  /* Slightly transparent shadow */
-  border: 2px solid #58d289;
+  //box-shadow: 0 6px 14px rgba(122, 220, 197, 0.3);  /* Slightly transparent shadow */
+  border: 3px solid #58d289;
 }
 
 .slick-prev, .slick-next {

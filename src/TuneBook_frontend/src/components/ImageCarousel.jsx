@@ -5,13 +5,15 @@ import "slick-carousel/slick/slick-theme.css";
 
 const images = [
     "/carouselimages/1.jpg",
-    "/carouselimages/2.jpg",
+    "/carouselimages/w1.jpg",
+    "/carouselimages/12.jpeg",
     "/carouselimages/3.jpg",
     "/carouselimages/4.jpg",
+    "/carouselimages/w6.jpg",
+    "/carouselimages/9.jpeg",
     "/carouselimages/5.jpg",
     "/carouselimages/6.jpg",
-    "/carouselimages/7.jpg",
-    "/carouselimages/8.jpg"
+    "/carouselimages/13.jpeg"
 ];
 
 function ImageCarousel() {

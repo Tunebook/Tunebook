@@ -104,7 +104,7 @@ function App() {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://identity.ic0.app",
-      maxTimeToLive: 24 * 3_600_000_000_000,  // Set TTL for session
+      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
       onSuccess: async () => {
         console.log('ICP Login Successful');
         handleLogin(authClient.getIdentity());
@@ -117,6 +117,7 @@ function App() {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://nfid.one/authenticate",
+      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
       onSuccess: async () => {
         console.log('NFID Login Successful');
         handleLogin(authClient.getIdentity());
@@ -238,6 +239,30 @@ function App() {
             element={
               <>
                 <ImageCarousel />
+
+                <div className="info-box" style={{
+                  textAlign: 'center',
+                  padding: '20px',
+                  margin: '10px 0',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  maxWidth: '1100px',
+                  justifySelf: 'center'
+                }}>
+               
+                <p style={{ fontSize: '18px', lineHeight: '1.6' }}>
+                  Explore a large collection of over <strong>18,000 tunes</strong>! 
+                  Tunebook is a powerful platform for musicians to <strong>create, store, and share</strong> their tunes with the world.
+                  Whether you're looking for inspiration or want to build your own digital library, Tunebook has you covered. Connect
+                  with other Celtic musicians and find mutual tunes with them for your sessions. Find the latest sessions happening around your area. 
+                </p>
+
+              </div>
+
+          
+
+
+
                 {actor ? (
                   <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} />
                 ) : (
@@ -246,9 +271,10 @@ function App() {
               </>
             } 
           />
-          <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available.</p>} />
-          <Route path="/sessions" element={actor && activeSession ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available.</p>} />
-          <Route path="/friends" element={actor && activeFriends ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available.</p>} />
+          <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available, try refreshing this page.</p>} />
+          
+          <Route path="/sessions" element={actor ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available, try refreshing this page.</p>} />
+          <Route path="/friends" element={actor ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available, try refreshing this page.</p>} />
           <Route path="/login" element={<Login setAuthClient={setAuthClient} setCurrentAccount={setCurrentAccount} setActor={setActor} setIsLoggedIn={setIsLoggedIn} />} />
         
           

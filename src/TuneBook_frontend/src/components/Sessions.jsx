@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerIconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import { principal } from '@ic-reactor/react/dist/utils';
 
 function Sessions({ actor, currentPrincipal }) {
  const [sessions, setSessions] = useState([]);
@@ -41,6 +42,8 @@ function Sessions({ actor, currentPrincipal }) {
  const [loading, setLoading] = useState(false); 
  const [loadingAddSession, setLoadingAddSession] = useState(false); 
  const navigate = useNavigate();
+ const [selectedSession, setSelectedSession] = useState(null); // Selected session to update
+ const [showUpdateModal, setShowUpdateModal] = useState(false);
 
  const recurringOptions = [ 
 
@@ -468,6 +471,88 @@ const handlePageChange = (selectedPage) => {
   };
 
 
+// -------------------------------------------------------- //
+// -------------------------------------------------------- //
+// -------------------------------------------------------- //
+// --------- UPDATE SESSIONS ------------------------------ //
+// -------------------------------------------------------- //
+// -------------------------------------------------------- //
+
+// Function to handle session updates
+const handleUpdateSessionClick = (session) => {
+  setSelectedSession(session); // Set the session to be updated
+  setShowUpdateModal(true); // Open the modal for editing
+};
+
+// Pre-fill form fields with selected session data when `selectedSession` changes
+useEffect(() => {
+  if (selectedSession) {
+    setName(selectedSession.name || "");
+    setLocation(selectedSession.location || "");
+    setDaytime(selectedSession.daytime || "");
+    setContact(selectedSession.contact || "");
+    setComment(selectedSession.comment || "");
+    setRecurring(selectedSession.recurring || "N/A");
+  }
+}, [selectedSession]);
+
+const handleUpdateSession = async () => {
+  setLoadingAddSession(true);
+
+  try {
+    if (!currentPrincipal) {
+      setLoadingAddSession(false);
+      setErrorMessage('You must be logged in to update a session.');
+      return;
+    }
+
+    const username = (await actor.authentication(currentPrincipal))?.username || 'Unknown';
+
+        // Ensure ID is a nat32-compatible number
+        const sessionId = parseInt(selectedSession.id, 10);
+        if (isNaN(sessionId) || sessionId < 0) {
+          setErrorMessage("Invalid session ID");
+          setLoadingAddSession(false);
+          return;
+        }
+
+        const success = await actor.update_session(
+          sessionId,  // Ensure the session ID is a valid integer
+          currentPrincipal,
+          username,
+          name,
+          location,
+          daytime,
+          contact,
+          comment || "N/A",  // Default to 'N/A' if empty
+          recurring || "N/A"  // Default to 'N/A' if empty
+        );
+
+    if (success) {
+      setSuccessMessage('Session updated successfully!');
+      setErrorMessage('');
+      // Reset form fields
+      setName('');
+      setLocation('');
+      setDaytime('');
+      setContact('');
+      setComment('');
+      setRecurring('N/A');
+      fetchSessions(); // Refresh sessions list
+      setShowUpdateModal(false); // Close modal after successful update
+    } else {
+      setErrorMessage('Failed to update session. You may lack permission.');
+      alert("Failed to update session.");
+      setShowUpdateModal(false);
+    }
+  } catch (error) {
+    console.error("Error updating session:", error);
+    alert("Error updating session. Please try again.");
+  } finally {
+    setLoadingAddSession(false);
+  }
+};
+
 
 // -------------------------------------------------------- //
 // -------------------------------------------------------- //
@@ -476,162 +561,240 @@ const handlePageChange = (selectedPage) => {
 // -------------------------------------------------------- //
 // -------------------------------------------------------- //
 
- return (
-   <div className="sessions-container">
-     <h1>Sessions</h1>
+return (
+  <div className="sessions-container">
+    <h1>Sessions</h1>
 
-       {/* Display the Nominatim request count */}
-      {/* <p>Nominatim requests: {nominatimRequestCount}</p> */}
+    {/* Search Input */}
+    <input
+      type="text"
+      className="search-input-sessions"
+      placeholder="Search sessions"
+      value={searchTerm}
+      onChange={handleSearchChange}
+    />
 
-     {/* Search Input */}
-     <input
-       type="text"
-       className="search-input-sessions"
-       placeholder="Search sessions"
-       value={searchTerm}
-       onChange={handleSearchChange}
-       //onKeyDown={handleSearchSubmit}
-     />
+    {/* Map container */}
+    <div id="map" ref={mapRef}></div>
 
-
-     {/* Map container */}
-     <div id="map" ref={mapRef} ></div>
-
-
-
-     {loading ? (
-       <div className="loading-spinner"></div>
-
-        ) : (
-
+    {loading ? (
+      <div className="loading-spinner"></div>
+    ) : (
       <div className="sessions-list">
-       {filteredSessions.length > 0 ? (
-         filteredSessions.map((session) => (
-           <div key={session.id} className="session-card">
-             <h3>{session.name}</h3>
-             <p>Location: {session.location}</p>
-             <p>Day and Time: {session.daytime}</p>
-             <p>Added by: {session.username || "Unknown"}</p> 
-             <p>Contact: {session.contact}</p>
-             <p>Comments: {session.comment}</p>
-             <p>Recurring: {session.recurring}</p> 
+        {filteredSessions.length > 0 ? (
+          filteredSessions.map((session) => (
+            <div key={session.id} className="session-card">
+              <h3>{session.name}</h3>
+              <p>Location: {session.location}</p>
+              <p>Day and Time: {session.daytime}</p>
+              <p>Added by: {session.username || "Unknown"}</p>
+              <p>Contact: {session.contact}</p>
+              <p>Comments: {session.comment}</p>
+              <p>Recurring: {session.recurring}</p>
 
-            
-              {/* Delete Button */}
-              <button 
-                className="delete-session-button" 
+           {/*}
+              <button
+                className="update-session-button"
+                onClick={() => handleUpdateSessionClick(session)}
+              >
+                ✏️
+              </button>
+              */}
+              <button
+                className="delete-session-button"
                 onClick={() => handleDeleteSession(session.id)}
               >
                 🗑️
               </button>
-
-
-
-           </div>
-         ))
-
-       ) : (
-         <p>No sessions found.</p>
-       )}
-     </div>
+            </div>
+          ))
+        ) : (
+          <p>No sessions found.</p>
         )}
+      </div>
+    )}
 
+    {/* Pagination */}
+    <div className="pagination-wrapper">
+      <ReactPaginate
+        previousLabel={"Previous"}
+        nextLabel={"Next"}
+        breakLabel={"..."}
+        pageCount={totalPages}
+        marginPagesDisplayed={2}
+        pageRangeDisplayed={5}
+        onPageChange={handlePageChange}
+        containerClassName={"pagination"}
+        pageClassName={"page-item"}
+        activeClassName={"active"}
+        previousClassName={"prev"}
+        nextClassName={"next"}
+      />
+    </div>
 
+    {/* Add Session Button */}
+    <button
+      className="add-session-button"
+      onClick={() => {
+        if (!currentPrincipal) {
+          alert('You must be signed in to add a session.');
+          navigate('/login');
+        } else {
+          setShowModal(true);
+        }
+      }}
+    >
+      Add Session
+    </button>
 
+    {showUpdateModal && (
+      <div className="modal">
+        <div className="modal-content">
+          <span className="close-modal" onClick={() => setShowUpdateModal(false)}>
+            &times;
+          </span>
+          <h2>Update Session</h2>
 
-     {/* Pagination */}
-     <div className="pagination-wrapper">
-       <ReactPaginate
-         previousLabel={"Previous"}
-         nextLabel={"Next"}
-         breakLabel={"..."}
-         pageCount={totalPages}  // Total number of pages
-         marginPagesDisplayed={2}
-         pageRangeDisplayed={5}
-         onPageChange={handlePageChange}
-         containerClassName={"pagination"}   // Apply pagination styles
-         pageClassName={"page-item"}         // Class for each page number
-         activeClassName={"active"}          // Active page class
-         previousClassName={"prev"}          // Class for "Previous" link
-         nextClassName={"next"}              // Class for "Next" link
-       />
-     </div>
-
-
-     {/* Add Session Button */}
-     <button
-        className="add-session-button"
-        onClick={() => {
-            if (!currentPrincipal) {
-            alert('You must be signed in to add a session.');
-            navigate('/login');
-            } else {
-            setShowModal(true); // Only show the modal if the user is signed in
-            }
-        }}
-        >
-        Add Session
-        </button>
-
-
-     {/* Modal for Adding Session */}
-     {showModal && (
-       <div className="modal">
-         <div className="modal-content" ref={modalRef}> {/* Assign ref to modal content */}
-           <span className="close-modal" onClick={() => setShowModal(false)}>
-             &times;
-           </span>
-           <h2>Add a New Session</h2>
-           <form onSubmit={handleAddSession}>
-             <div>
-               <label>Session Name:</label>
-               <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-             </div>
-             <div>
-               <label>Location:</label>
-               <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} required />
-             </div>
-             <div>
-               <label>Day/Time:</label>
-               <input type="datetime-local" value={daytime} onChange={(e) => setDaytime(e.target.value)} required />
-             </div>
-             <div>
-               <label>Contact:</label>
-               <input type="text" value={contact} onChange={(e) => setContact(e.target.value)} required />
-             </div>
-             <div>
-               <label>Comment:</label>
-               <textarea value={comment} onChange={(e) => setComment(e.target.value)}></textarea>
-             </div>
-             <div>
-            <label>Recurring:</label>
-            <select 
-                value={recurring} 
-                onChange={(e) => setRecurring(e.target.value)} 
+          <form onSubmit={(e) => { e.preventDefault(); handleUpdateSession(); }}>
+            <div>
+              <label>Session Name:</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
-            >
+              />
+            </div>
+            <div>
+              <label>Location:</label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Day/Time:</label>
+              <input
+                type="datetime-local"
+                value={daytime}
+                onChange={(e) => setDaytime(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Contact:</label>
+              <input
+                type="text"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Comment:</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </div>
+            <div>
+              <label>Recurring:</label>
+              <select
+                value={recurring}
+                onChange={(e) => setRecurring(e.target.value)}
+                required
+              >
                 <option value="N/A">N/A</option>
                 <option value="Weekly">Weekly</option>
                 <option value="Biweekly">Biweekly</option>
                 <option value="Monthly">Monthly</option>
-            </select>
+              </select>
             </div>
+            <button type="submit" disabled={loadingAddSession}>
+              {loadingAddSession ? "Updating..." : "Update Session"}
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
 
 
-
-  
+    {/* Modal for Adding Session */}
+    {showModal && (
+      <div className="modal">
+        <div className="modal-content" ref={modalRef}>
+          <span className="close-modal" onClick={() => setShowModal(false)}>
+            &times;
+          </span>
+          <h2>Add a New Session</h2>
+          <form onSubmit={handleAddSession}>
+            <div>
+              <label>Session Name:</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Location:</label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Day/Time:</label>
+              <input
+                type="datetime-local"
+                value={daytime}
+                onChange={(e) => setDaytime(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Contact:</label>
+              <input
+                type="text"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label>Comment:</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              ></textarea>
+            </div>
+            <div>
+              <label>Recurring:</label>
+              <select
+                value={recurring}
+                onChange={(e) => setRecurring(e.target.value)}
+                required
+              >
+                <option value="N/A">N/A</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Biweekly">Biweekly</option>
+                <option value="Monthly">Monthly</option>
+              </select>
+            </div>
             <button type="submit" disabled={loadingAddSession}>
               {loadingAddSession ? "Adding Session..." : "Add Session"}
             </button>
-
-           </form>
-         </div>
-       </div>
-     )}
-   </div>
- );
+          </form>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }
 
-
 export default Sessions;
-

@@ -9,6 +9,7 @@ function Profile({ actor, currentPrincipal }) {
   const [avatar, setAvatar] = useState(null);
   const [pob, setpob] = useState('');
   const [messageStatus, setMessageStatus] = useState('');
+  const [bio, setBio] = useState('');
   
   const [useDefaultAvatar, setUseDefaultAvatar] = useState(false);
   const [loading, setLoading] = useState(false);   // For handling loading state
@@ -33,6 +34,7 @@ function Profile({ actor, currentPrincipal }) {
     { value: 'Bouzoki', label: 'Bouzoki' }, 
     { value: 'Mandolin', label: 'Mandolin' }, 
     { value: 'Banjo', label: 'Banjo' }, 
+    { value: 'Whistle', label: 'Whistle' }, 
     { value: 'other', label: 'Other' }
   ];
 
@@ -93,6 +95,7 @@ function Profile({ actor, currentPrincipal }) {
         username,
         pob,
         instrumentsString,
+        bio,
         avatar
       );
   
@@ -161,6 +164,25 @@ function Profile({ actor, currentPrincipal }) {
             disabled={useDefaultAvatar} 
           />
         </div>
+
+        <div>
+        <label>
+                Bio:
+                <textarea
+                    value={bio}
+                    rows="4" 
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell us about yourself"
+                    style={{
+                      marginTop: '10px',
+                      backgroundColor: '#333',
+                      color: 'white'
+                    }
+                    } 
+                />
+            </label>
+        </div>
+
 
         <div className='default-avatar-checkbox'>
         <input

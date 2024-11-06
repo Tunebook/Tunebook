@@ -62,7 +62,7 @@ function Login({ setAuthClient, setCurrentAccount, setActor, setIsLoggedIn }) {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://identity.ic0.app",
-      maxTimeToLive: 24 * 3_600_000_000_000,
+      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
       onSuccess: () => handleLogin(authClient.getIdentity()),
     });
   };
@@ -71,6 +71,7 @@ function Login({ setAuthClient, setCurrentAccount, setActor, setIsLoggedIn }) {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://nfid.one/authenticate",
+      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
       onSuccess: () => handleLogin(authClient.getIdentity()),
     });
   };

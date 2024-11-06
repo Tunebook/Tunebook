@@ -5,7 +5,6 @@ import ReactPaginate from "react-paginate";
 import Select from 'react-select';
 import { keyInfo, rhythmInfo } from './variables';  
 
-
 function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
   const [orgTunes, setOrgTunes] = useState([]);  
   const [currentTuneData, setCurrentTuneData] = useState("");
@@ -22,10 +21,17 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
   const [abcNotation, setAbcNotation] = useState("");
   const [selectedTab, setSelectedTab] = useState("sheet"); 
 
-
   const [visualObj, setVisualObj] = useState(null);
   const synth = new ABCJS.synth.CreateSynth();
   const synthControl = new ABCJS.synth.SynthController();
+
+  // Helper function to clean up the tune title
+  const cleanTitle = (title) => {
+    // Remove any leading numbers and a hyphen (e.g., "00 - ")
+    const withoutNumbers = title.replace(/^\d+\s*-\s*/, '');
+    // Remove the .abc extension if present
+    return withoutNumbers.replace(/\.abc$/, '');
+  };
 
   // Fetch tunes whenever the page, search, or filter changes
   useEffect(() => {
@@ -33,26 +39,25 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
     fetchTunes();
   }, [currentPage, searchTitle, key, rhythm, actor]);
 
-    // Re-initialize sheet music rendering when the "Sheet Music" tab is selected
-    useEffect(() => {
-      if (selectedTab === "sheet" && currentTuneData) {
-        iniABCJS(currentTuneData);
-      }
-    }, [selectedTab, currentTuneData]);
+  useEffect(() => {
+    if (selectedTab === "sheet" && currentTuneData) {
+      iniABCJS(currentTuneData);
+    }
+  }, [selectedTab, currentTuneData]);
 
   // Fetch user's profile tunes
   const fetchUserTunes = async () => {
     try {
       if (!currentPrincipal) return;
       const [tuneList] = await actor.get_user_tune_list(currentPrincipal, 0);
-      const userTuneTitles = tuneList.map(tune => tune.title);  // Extract titles
+      const userTuneTitles = tuneList.map(tune => tune.title);
       setUserTunes(userTuneTitles);
     } catch (error) {
       console.error("Error fetching user's tunes:", error);
     }
   };
+  
 
-  // Fetch and filter tunes based on the current search and filters
   const fetchTunes = async () => {
     try {
       const response = await actor.filter_tunes(
@@ -61,30 +66,30 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
         key.value,
         currentPage
       );
-
       const tunes = response[0];
+      const totalCount = response[1];
 
-      // Group library tunes (with multiple versions) and set them separately
+      // Group library tunes (tunes with multiple versions) on this page, if any
       const libraryTunes = groupLibraryTunes(tunes);
       setLibraryTunes(libraryTunes);
 
-      // Filter out the library tunes from the regular tune list
+      // Filter out the tunes with versions from the regular tunes list
       const regularTunes = tunes.filter(tune =>
         !libraryTunes.some(lib => lib.baseTitle === tune.title.split('_')[0])
       );
       setOrgTunes(regularTunes);
 
-      setTotalPages(Math.ceil(response[1] / tunesPerPage)); // Calculate total pages
+      setTotalPages(Math.ceil(totalCount / tunesPerPage));
     } catch (error) {
       console.error("Error fetching tunes:", error);
     }
   };
 
-  // Group tunes by base title (without the version suffix)
-  const groupLibraryTunes = (tunes) => {
+const groupLibraryTunes = (tunes) => {
     const groupedLibraryTunes = {};
 
     tunes.forEach((tune) => {
+      // Use the cleaned-up title as the base for grouping
       const [baseTitle] = tune.title.split('_');
       if (!groupedLibraryTunes[baseTitle]) {
         groupedLibraryTunes[baseTitle] = [];
@@ -92,7 +97,7 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
       groupedLibraryTunes[baseTitle].push(tune);
     });
 
-    // Filter out the ones with only one version
+    // Only keep entries with more than one version
     return Object.entries(groupedLibraryTunes).filter(
       ([, versions]) => versions.length > 1
     ).map(([baseTitle, versions]) => ({
@@ -101,7 +106,7 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
     }));
   };
 
-  // Handle selecting a tune
+
   const onSelectTune = async (selectedTune) => {
     if (!selectedTune) return;
     try {
@@ -109,14 +114,13 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
       const tuneData = await actor.get_original_tune(selectedTune.title);
       setCurrentTuneData(tuneData);
       setCurrentTuneTitle(selectedTune.title);
-      iniABCJS(tuneData);  // Initialize ABCJS with the selected tune
+      iniABCJS(tuneData);
       setAbcNotation(tuneData);
     } catch (error) {
       console.error("Error fetching tune data:", error);
     }
   };
 
-  // Initialize ABCJS for the selected tune with local soundfonts
   const iniABCJS = async (tuneData) => {
     if (!tuneData) return;
     setTimeout(async () => {
@@ -143,12 +147,10 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
     }, 100);
   };
 
-  // Handle pagination
   const handlePageChange = (data) => {
     setCurrentPage(data.selected);
   };
 
-  // Handle adding a tune
   const handleAddTune = async (tune) => {
     try {
       if (!currentPrincipal) {
@@ -165,7 +167,7 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
 
       const success = await actor.add_tune(currentPrincipal, tune.title, tuneData, false);
       if (success) {
-        setUserTunes((prev) => [...prev, tune.title]);  // Mark this tune as added
+        setUserTunes((prev) => [...prev, tune.title]);
       }
     } catch (error) {
       console.error("Error adding tune to profile:", error);
@@ -173,33 +175,111 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
   };
 
   return (
-    <div className="tune-app-container">
-      <h2 className="title">Browse Tunes</h2>
+<div className="tune-app-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', color: 'white' }}>
+  <h2 className="title" style={{ fontSize: '30px', textAlign: 'center', marginBottom: '20px' }}>Browse Tunes</h2>
 
-      {/* Search Input and Filters */}
-      <div className="search-filter">
-        <input
-          className="search-input"
-          placeholder="Search for tunes"
-          value={searchTitle}
-          onChange={(e) => { setSearchTitle(e.target.value); setCurrentPage(0); }}
-        />
-        <Select 
-          value={rhythm} 
-          onChange={(value) => setRhythm(value)} 
-          options={rhythmInfo} 
-          className="select-filter"
-        />
-        <Select 
-          value={key} 
-          onChange={(value) => setKey(value)} 
-          options={keyInfo} 
-          className="select-filter"
-        />
-      </div>
+  <div className="search-filter" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+    <input
+      className="search-input"
+      placeholder="Search for tunes"
+      value={searchTitle}
+      onChange={(e) => { setSearchTitle(e.target.value); setCurrentPage(0); }}
+      style={{
+        flex: 1,
+        marginRight: '10px',
+        padding: '10px',
+        borderRadius: '8px',
+        backgroundColor: '#222',
+        border: '2px solid #58d289',
+        color: '#fff',
+      }}
+    />
+    
+    <Select
+      value={rhythm}
+      onChange={(value) => setRhythm(value)}
+      options={rhythmInfo}
+      className="select-filter"
+      styles={{
+        container: (base) => ({
+          ...base,
+          width: '200px',
+          marginRight: '10px',
+          
+        }),
+        control: (base) => ({
+          ...base,
+          backgroundColor: '#222',
+          border: '2px solid #58d289',
+          color: '#fff',
+        }),
+        singleValue: (base) => ({
+          ...base,
+          color: '#fff',
+        }),
+        menu: (base) => ({
+          ...base,
+          backgroundColor: '#333',
+          color: '#fff',
+          border: '1px solid #58d289',
+        }),
+        option: (base, { isFocused, isSelected }) => ({
+          ...base,
+          backgroundColor: isSelected ? '#58d289' : isFocused ? '#444' : '#333',
+          color: isSelected ? '#000' : '#fff',
+          cursor: 'pointer',
+        }),
+        placeholder: (base) => ({
+          ...base,
+          color: '#888',
+        }),
+      }}
+    />
 
-      {/* Tune Details with Tabs */}
-      {currentTuneData && (
+    <Select
+      value={key}
+      onChange={(value) => setKey(value)}
+      options={keyInfo}
+      className="select-filter"
+      styles={{
+        container: (base) => ({
+          ...base,
+          width: '200px',
+        }),
+        control: (base) => ({
+          ...base,
+          backgroundColor: '#222',
+          border: '2px solid #58d289',
+          color: '#fff',
+        }),
+        singleValue: (base) => ({
+          ...base,
+          color: '#fff',
+        }),
+        menu: (base) => ({
+          ...base,
+          backgroundColor: '#333',
+          color: '#fff',
+          border: '1px solid #58d289',
+        }),
+        option: (base, { isFocused, isSelected }) => ({
+          ...base,
+          backgroundColor: isSelected ? '#58d289' : isFocused ? '#444' : '#333',
+          color: isSelected ? '#000' : '#fff',
+          cursor: 'pointer',
+        }),
+        placeholder: (base) => ({
+          ...base,
+          color: '#888',
+        }),
+      }}
+    />
+  </div>
+
+
+
+            {/* Tune Details with Tabs */}
+            {currentTuneData && (
               <div className="tune-detail-view">
                 <h2> </h2>
                 
@@ -268,8 +348,6 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
               </div>
             )}
 
-
-      {/* Tune List */}
       <div className="tune-list">
         {orgTunes.length > 0 ? (
           orgTunes.map((tune, index) => (
@@ -290,11 +368,11 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
                   <path d="M8 5v10l8-5z" /> 
                 </svg>
               </span>
-              {tune.title.split("_")[0]}
+              {cleanTitle(tune.title.split("_+TBusername+:_")[0])}
             </p>
             
             <p className="tune-id">
-              Added by: {tune.title.split("_+_")[1] || "default"}
+              Added by: {tune.title.split("_+TBusername+:_")[1] || "Tunebook"}
             </p>
 
                 <button
@@ -322,10 +400,7 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
               <p className="tune-title">{`📚 ${library.baseTitle} Tune Library`}</p>
               <button
                 className="add-tune-button"
-                onClick={() => {
-                  
-                  setCurrentLibrary(currentLibrary === library ? null : library);
-                }}
+                onClick={() => setCurrentLibrary(currentLibrary === library ? null : library)}
               >
                 {currentLibrary === library ? "📚 Collapse" : "📚 Expand"}
               </button>
@@ -343,6 +418,7 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
               <div className="tune-details">
                 
                 <p className="tune-title">
+                
                 <span className="play-icon-circle">
                   <svg
                     className="play-icon"
@@ -353,11 +429,12 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
                     <path d="M8 5v10l8-5z" /> 
                   </svg>
                 </span>
-                {tune.title.split("_")[0]}
+                {cleanTitle(tune.title.split("_+TBusername+:_")[0])} 
               </p>
 
                 <p className="tune-id">{tune.title.split("_")[1]}</p>
-                <p className="tune-id">{tune.title.split("_+_")[1]}</p>
+                Added by: {tune.title.split("_+TBusername+:_")[1] || "Tunebook"}
+                
                 <button
                   className="add-tune-button"
                   onClick={() => handleAddTune(tune)}
@@ -377,17 +454,18 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
           previousLabel={"Previous"}
           nextLabel={"Next"}
           breakLabel={"..."}
-          pageCount={totalPages}  // Total number of pages
+          pageCount={totalPages}
           marginPagesDisplayed={2}
           pageRangeDisplayed={5}
           onPageChange={handlePageChange}
-          containerClassName={"pagination"}   // Apply pagination styles
-          pageClassName={"page-item"}         // Class for each page number
-          activeClassName={"active"}          // Active page class
-          previousClassName={"prev"}          // Class for "Previous" link
-          nextClassName={"next"}              // Class for "Next" link
+          containerClassName={"pagination"}
+          pageClassName={"page-item"}
+          activeClassName={"active"}
+          previousClassName={"prev"}
+          nextClassName={"next"}
         />
       </div>
     </div>
-)};
+  );
+}
 export default Tunes;

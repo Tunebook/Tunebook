@@ -7,6 +7,7 @@ pub struct Profile {
     pub avatar: Vec<u8>,
     pub pob: String,
     pub instruments: String,
+    pub bio: Option<String>,
     pub friends: Vec<String>,
     pub incoming_fr: Vec<Friend>,
     pub outcoming_fr: Vec<Friend>
