@@ -41,7 +41,7 @@ function Footer() {
             <img src="/twitterIcon.png" alt="Twitter" className="social-icon" />
             </a>
 
-            <a href="https://github.com/GurleenkDhaliwal/Tunebook" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Tunebook/Tunebook" target="_blank" rel="noopener noreferrer">
             <img src="/github-logo.png" alt="Github" className="social-icon" />
             </a>
 
