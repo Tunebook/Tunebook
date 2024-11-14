@@ -20,7 +20,7 @@ pub struct Tune {
     pub tune_data: String,
     pub timestamp: u64,
     pub principals: Vec<String>,
-    //pub username: Option<String>
+    pub username: Option<String>,
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]
@@ -46,6 +46,7 @@ pub struct Friend {
 #[derive(CandidType, Clone, Deserialize, Debug)]
 pub struct Tuneinfo {
     pub title: String,
-    pub tune_data: String
+    pub tune_data: String,
+    pub username: Option<String>,
 }
     

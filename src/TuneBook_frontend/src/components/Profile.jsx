@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from './LoadingSpinner';
 
 function Profile({ actor, currentPrincipal }) {
   const [username, setUsername] = useState('');
@@ -12,8 +13,8 @@ function Profile({ actor, currentPrincipal }) {
   const [bio, setBio] = useState('');
   
   const [useDefaultAvatar, setUseDefaultAvatar] = useState(false);
-  const [loading, setLoading] = useState(false);   // For handling loading state
-  const [error, setError] = useState(null);        // For handling errors
+  const [loading, setLoading] = useState(false);   
+  const [error, setError] = useState(null);       
 
   const navigate = useNavigate();
 
@@ -124,6 +125,9 @@ function Profile({ actor, currentPrincipal }) {
 
   return (
     <div className="create-profile-container">
+
+      {loading && <LoadingSpinner />}
+
       <h2>Generate Profile</h2>
       <form onSubmit={handleSubmit}>
         <div>

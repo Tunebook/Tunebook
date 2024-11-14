@@ -37,8 +37,8 @@ async fn update_profile(principal: String, username: String, pob: String, instru
 }
 
 #[ic_cdk::query]
-fn get_original_tune_list(page_number: i32) -> (Vec<String>, i32) {
-    utils::get_original_tune_list(page_number)
+fn get_original_tune_list(principal: String, page_number: i32) -> (Vec<String>, i32) {
+    utils::get_original_tune_list(principal, page_number)
 }
 
 #[ic_cdk::query]
@@ -57,13 +57,13 @@ fn get_user_tune(principal: String, title: String) -> String {
 }
 
 #[ic_cdk::update]
-async fn add_tune(principal: String, title: String, tune_data: String, origin: bool) -> bool {
-    utils::add_tune(principal, title, tune_data, origin).await
+async fn add_tune(principal: String, title: String, tune_data: String, origin: bool, username: Option<String>) -> bool {
+    utils::add_tune(principal, title, tune_data, origin, username).await
 }
 
 #[ic_cdk::update]
-async fn update_tune(principal: String, title: String, tune_data: String, origin: bool) -> bool {
-    utils::update_tune(principal, title, tune_data, origin).await
+async fn update_tune(principal: String, title: String, tune_data: String, origin: bool, username: Option<String>) -> bool {
+    utils::update_tune(principal, title, tune_data, origin, username).await
 }
 
 #[ic_cdk::query]
@@ -134,4 +134,22 @@ pub fn get_profile(principal: String) -> Option<types::Profile> {
     utils::get_profile(principal)
 }
 
+#[ic_cdk::update]
+pub fn remove_tune(principal: String, title: String) -> bool {
+    utils::remove_tune(principal, title)
+}
 
+#[ic_cdk::query]
+fn get_profile_count() -> u64 {
+    utils::get_profile_count()
+}
+
+#[ic_cdk::query]
+fn get_tune_count() -> u64 {
+    utils::get_tune_count()
+}
+
+#[ic_cdk::query]
+fn get_session_count() -> u64 {
+    utils::get_session_count()
+}

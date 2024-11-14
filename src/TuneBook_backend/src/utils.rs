@@ -114,6 +114,7 @@ pub async fn init() {
                         tune_data: tune_data.clone(),
                         timestamp: api::time(),
                         principals: vec![],
+                        username: Some("Tunebook".to_string()),
                     };
                     tune_store.borrow_mut().insert(key.clone(), new_tune);
                     count += 1;  // Count the number of tunes processed
@@ -194,11 +195,8 @@ pub async fn update_profile(
 )}
 
 
-
-
-
 // Function to get a paginated list of original tunes
-pub fn get_original_tune_list(page_number: i32) -> (Vec<String>, i32) {
+pub fn get_original_tune_list(principal: String, page_number: i32) -> (Vec<String>, i32) {
     TUNE_STORE.with(|tune_store| {
         let tunes: Vec<String> = tune_store
             .borrow()
@@ -234,7 +232,8 @@ pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tu
             .map(|(_, tune_info)| {
                 let user_tune = types::Tuneinfo {
                     title: tune_info.title.clone(),
-                    tune_data: tune_info.tune_data.clone()
+                    tune_data: tune_info.tune_data.clone(),
+                    username: tune_info.username.clone(),
                 };
                 user_tune
             })
@@ -255,6 +254,39 @@ pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tu
             return (res, user_tunes.len() as i32);
     })
 }
+/*
+pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tuneinfo>, i32) {
+    TUNE_STORE.with(|tune_store| {
+        let user_tunes: Vec<types::Tuneinfo> = tune_store
+            .borrow()
+            .iter()
+            .filter(|(_, tune_info)| tune_info.principals.contains(&principal))
+            .map(|(_, tune_info)| {
+                let user_tune = types::Tuneinfo {
+                    title: tune_info.title.clone(),
+                    tune_data: tune_info.tune_data.clone(),
+                    username: tune_info.username.clone(), // Map username from Tune to Tuneinfo
+                };
+                user_tune
+            })
+            .collect();
+
+        if page_number == -1 {
+            return (user_tunes.clone(), user_tunes.len() as i32);
+        }
+
+        let res = user_tunes
+            .iter()
+            .skip(page_number as usize * 8)
+            .enumerate()
+            .filter(|(index, _)| *index < 8)
+            .map(|(_, tune_info)| tune_info.clone())
+            .collect();
+
+        (res, user_tunes.len() as i32)
+    })
+}
+*/
 
 pub fn get_user_tune(principal: String, title: String) -> String {
     TUNE_STORE.with(|tune_store| {
@@ -278,6 +310,7 @@ pub async fn add_tune(
     title: String,
     tune_data: String,
     origin: bool,
+    username: Option<String>,
 ) -> bool {
     TUNE_STORE.with(|tune_store| {
         let mut principals: Vec<String> = vec![];
@@ -297,7 +330,8 @@ pub async fn add_tune(
             title,
             tune_data,
             timestamp: ic_cdk::api::time(),
-            principals
+            principals,
+            username: username.or(Some("Tunebook".to_string())),
         };
         tune_store.borrow_mut().insert(new_tune.title.clone(), new_tune);
         true
@@ -305,12 +339,43 @@ pub async fn add_tune(
 }
 
 
+pub fn remove_tune(principal: String, title: String) -> bool {
+    TUNE_STORE.with(|tune_store| {
+        let mut store = tune_store.borrow_mut();
+        
+        if let Some(tune) = store.get(&title) {
+            // Check if the user has this tune in their tunebook
+            if tune.principals.contains(&principal) {
+                let mut updated_principals = tune.principals.clone();
+                updated_principals.retain(|p| p != &principal); // Remove user's principal from the list
+                
+                if updated_principals.is_empty() {
+                    // If no other user has this tune, delete it
+                    store.remove(&title);
+                } else {
+                    // Update the tune with the new list of principals
+                    let updated_tune = types::Tune {
+                        principals: updated_principals,
+                        ..tune.clone() // Keep other fields the same
+                    };
+                    store.insert(title, updated_tune);
+                }
+                
+                return true; // Successfully removed tune
+            }
+        }
+        
+        false // Tune not found or not owned by user
+    })
+}
+
 
 pub async fn update_tune(
     principal: String,
     title: String,
     tune_data: String,
     origin: bool,
+    username: Option<String>,
 ) -> bool {
     TUNE_STORE.with(|tune_store| {
         if tune_store.borrow().get(&title).is_none() {
@@ -326,7 +391,8 @@ pub async fn update_tune(
             title,
             tune_data,
             timestamp: ic_cdk::api::time(),
-            principals: prev_tune.principals
+            principals: prev_tune.principals,
+            username: username.or(Some("Tunebook".to_string())), 
         };
         tune_store.borrow_mut().insert(updated_tune.title.clone(), updated_tune);
         true
@@ -624,6 +690,8 @@ pub fn filter_tunes(
                     filtered_tunes.push(types::Tuneinfo {
                         title: tune_info.title.clone(),
                         tune_data: tune_info.tune_data.clone(),
+                        username: tune_info.username.clone(),
+                        
                     });
                 }
                 current_index += 1;
@@ -889,15 +957,9 @@ pub fn update_session(id: u32, principal: String, username: String, name: String
                     // Reinsert the updated session back into the store
                     session_store.borrow_mut().insert(id, updated_session);
                     true // Successfully updated
-            
-    
+        
     })
     }
-
-    
-    
-
-
 
 
 pub fn delete_session(id: u32, principal: String) -> bool {
@@ -919,5 +981,29 @@ pub fn delete_session(id: u32, principal: String) -> bool {
         }
     })
 }
+
+
+
+pub fn get_profile_count() -> u64 {
+    PROFILE_STORE.with(|profile_store| {
+        profile_store.borrow().len() as u64  // Return the count of profiles
+    })
+}
+
+
+pub fn get_tune_count() -> u64 {
+    TUNE_STORE.with(|tune_store| {
+        tune_store.borrow().len() as u64  // Return the count of tunes
+    })
+}
+
+
+pub fn get_session_count() -> u64 {
+    SESSION_STORE.with(|session_store| {
+        session_store.borrow().len() as u64  // Return the count of sessions
+    })
+}
+
+
 
 

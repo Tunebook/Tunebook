@@ -4,12 +4,11 @@ import 'leaflet/dist/leaflet.css';
 import ReactPaginate from "react-paginate";
 import Select from 'react-select';
 import { useNavigate } from 'react-router-dom';
-
-// Import the images for the marker icon and shadow
+import LoadingSpinner from './LoadingSpinner';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerIconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-import { principal } from '@ic-reactor/react/dist/utils';
+
 
 function Sessions({ actor, currentPrincipal }) {
  const [sessions, setSessions] = useState([]);
@@ -40,7 +39,6 @@ function Sessions({ actor, currentPrincipal }) {
  const totalPages = Math.ceil(totalSessions / SESSIONS_PER_PAGE); 
 
  const [loading, setLoading] = useState(false); 
- const [loadingAddSession, setLoadingAddSession] = useState(false); 
  const navigate = useNavigate();
  const [selectedSession, setSelectedSession] = useState(null); // Selected session to update
  const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -64,7 +62,6 @@ function Sessions({ actor, currentPrincipal }) {
 
  // Fetch sessions from backend
  const fetchSessions = async () => {
-  setLoading(true);
     try {
       const result = await actor.get_sessions("", 0); // Assuming empty search term and page 0
       console.log("Sessions Data:", result[0]); // Log session data to inspect
@@ -99,15 +96,13 @@ function Sessions({ actor, currentPrincipal }) {
               ...prevUsernames,
               [session.principal]: 'Unknown' // Handle errors with fallback
             }));
-            setLoading(false);
           }
         }
+        
       });
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
-      setLoading(false);
     }
-    setLoading(false);
   };
  
  
@@ -116,16 +111,6 @@ function Sessions({ actor, currentPrincipal }) {
     fetchSessions();
   }, [searchTerm, pageNum, actor]);
  
- /*
-  const handleSearchSubmit = (event) => {
-     if (event.key === 'Enter') {
-        fetchSessions(); 
-       //setDebouncedTerm(searchTerm); // Trigger search when Enter is pressed
-       event.preventDefault(); // Prevent form submission or page reload
-     }
-   };
- */
-
    // Handle search input change
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -142,11 +127,11 @@ function Sessions({ actor, currentPrincipal }) {
 
 const handleAddSession = async (event) => {
     event.preventDefault();
-    setLoadingAddSession(true);
+    setLoading(true);
 
     try {
       if (!currentPrincipal) {
-        setLoadingAddSession(false);
+
         console.error('You must be logged in to add a session.');
         setErrorMessage('You must be logged in to add a session.');
 
@@ -166,7 +151,7 @@ const handleAddSession = async (event) => {
       const username = Array.isArray(profile) && profile.length > 0 ? profile[0].username : profile.username;
 
       if (!username) {
-        setLoadingAddSession(false);
+
         console.error('You need to have a profile to add a session.');
         setErrorMessage('You need to have a profile to add a session.');
         return;
@@ -190,15 +175,17 @@ const handleAddSession = async (event) => {
         setRecurring('');
         fetchSessions(); // Refresh sessions list
         setShowModal(false); // Close modal after successful add
+        setLoading(false);
       } else {
         setErrorMessage('Failed to add session.');
       }
+      setLoading(false);
     } catch (error) {
       console.error('Error adding session:', error);
       setErrorMessage('Error adding session. Please try again.');
-      setLoadingAddSession(false);
+      setLoading(false);
     }
-    setLoadingAddSession(false);
+    setLoading(false);
   };
 
 
@@ -226,6 +213,7 @@ const handleAddSession = async (event) => {
 
 // Geocoding API function to get lat/lng from a location name
 const geocodeLocation = async (location, retries = 1) => {
+
     try {
 
     setNominatimRequestCount(prevCount => prevCount + 1);
@@ -242,10 +230,9 @@ const geocodeLocation = async (location, retries = 1) => {
         const { lat, lon } = data[0];
         return { lat: parseFloat(lat), lng: parseFloat(lon) };
       }
-  
-      // Return null if no results are found
+
       return null;
-  
+
     } catch (error) {
       console.error(`Error in geocoding request: ${error.message}`);
   
@@ -256,9 +243,10 @@ const geocodeLocation = async (location, retries = 1) => {
         return geocodeLocation(location, retries - 1);
       }
   
-      // Return null if all retries fail
       return null;
+      
     }
+
   };
 
    // Initialize Leaflet map (only if it's not already initialized)
@@ -286,7 +274,9 @@ const geocodeLocation = async (location, retries = 1) => {
 
 // Filter sessions and geocode missing locations
 useEffect(() => {
+
     const filterAndGeocodeSessions = async () => {
+
       if (!debouncedTerm.trim()) return; // Only proceed if there's a valid search term
   
       // 1. Filter sessions by location or name matching the search term
@@ -357,6 +347,7 @@ useEffect(() => {
     };
  
     filterAndGeocodeSessions();
+
   }, [debouncedTerm, sessions, pageNum]);
 
 
@@ -393,7 +384,7 @@ useEffect(() => {
 
 
 
-  // Debounce effect (updates debouncedTerm after 500ms of no typing)
+  // Debounce
  useEffect(() => {
    const timer = setTimeout(() => {
      setDebouncedTerm(searchTerm);
@@ -408,16 +399,22 @@ useEffect(() => {
 
  // Effect to trigger the search/filter based on debounced term
  useEffect(() => {
+
     if (debouncedTerm) {
+
       // Filter sessions based on debounced search term
       const filtered = sessions.filter(session =>
         session.location.toLowerCase().includes(debouncedTerm.toLowerCase())
       );
       setFilteredSessions(filtered.slice(pageNum * SESSIONS_PER_PAGE, (pageNum + 1) * SESSIONS_PER_PAGE));
+
     } else {
+
       // If no search term, show all sessions
       setFilteredSessions(sessions.slice(pageNum * SESSIONS_PER_PAGE, (pageNum + 1) * SESSIONS_PER_PAGE));
+
     }
+
   }, [debouncedTerm, sessions, pageNum]);
   
 
@@ -563,6 +560,9 @@ const handleUpdateSession = async () => {
 
 return (
   <div className="sessions-container">
+    {/* Overlay Loading Spinner */}
+    {loading && <LoadingSpinner />} {/* Conditional spinner overlay */}
+
     <h1>Sessions</h1>
 
     {/* Search Input */}
@@ -577,42 +577,30 @@ return (
     {/* Map container */}
     <div id="map" ref={mapRef}></div>
 
-    {loading ? (
-      <div className="loading-spinner"></div>
-    ) : (
-      <div className="sessions-list">
-        {filteredSessions.length > 0 ? (
-          filteredSessions.map((session) => (
-            <div key={session.id} className="session-card">
-              <h3>{session.name}</h3>
-              <p>Location: {session.location}</p>
-              <p>Day and Time: {session.daytime}</p>
-              <p>Added by: {session.username || "Unknown"}</p>
-              <p>Contact: {session.contact}</p>
-              <p>Comments: {session.comment}</p>
-              <p>Recurring: {session.recurring}</p>
+    <div className="sessions-list">
+      {filteredSessions.length > 0 ? (
+        filteredSessions.map((session) => (
+          <div key={session.id} className="session-card">
+            <h3>{session.name}</h3>
+            <p>Location: {session.location}</p>
+            <p>Day and Time: {session.daytime}</p>
+            <p>Added by: {session.username || "Unknown"}</p>
+            <p>Contact: {session.contact}</p>
+            <p>Comments: {session.comment}</p>
+            <p>Recurring: {session.recurring}</p>
 
-           {/*}
-              <button
-                className="update-session-button"
-                onClick={() => handleUpdateSessionClick(session)}
-              >
-                ✏️
-              </button>
-              */}
-              <button
-                className="delete-session-button"
-                onClick={() => handleDeleteSession(session.id)}
-              >
-                🗑️
-              </button>
-            </div>
-          ))
-        ) : (
-          <p>No sessions found.</p>
-        )}
-      </div>
-    )}
+            <button
+              className="delete-session-button"
+              onClick={() => handleDeleteSession(session.id)}
+            >
+              🗑️
+            </button>
+          </div>
+        ))
+      ) : (
+        <p>No sessions found.</p>
+      )}
+    </div>
 
     {/* Pagination */}
     <div className="pagination-wrapper">
@@ -647,6 +635,7 @@ return (
       Add Session
     </button>
 
+    {/* Update Session Modal */}
     {showUpdateModal && (
       <div className="modal">
         <div className="modal-content">
@@ -712,16 +701,15 @@ return (
                 <option value="Monthly">Monthly</option>
               </select>
             </div>
-            <button type="submit" disabled={loadingAddSession}>
-              {loadingAddSession ? "Updating..." : "Update Session"}
+            <button type="submit" disabled={loading}>
+              {loading ? "Updating..." : "Update Session"}
             </button>
           </form>
         </div>
       </div>
     )}
 
-
-    {/* Modal for Adding Session */}
+    {/* Add Session Modal */}
     {showModal && (
       <div className="modal">
         <div className="modal-content" ref={modalRef}>
@@ -786,8 +774,8 @@ return (
                 <option value="Monthly">Monthly</option>
               </select>
             </div>
-            <button type="submit" disabled={loadingAddSession}>
-              {loadingAddSession ? "Adding Session..." : "Add Session"}
+            <button type="submit" disabled={loading}>
+              {loading ? "Adding Session..." : "Add Session"}
             </button>
           </form>
         </div>

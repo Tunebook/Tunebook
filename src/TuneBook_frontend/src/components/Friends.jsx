@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ABCJS from 'abcjs';  // Import ABCJS
+import ABCJS, { TuneBook } from 'abcjs';  // Import ABCJS
 import 'abcjs/abcjs-audio.css';
 import Modal from 'react-modal';
 import FriendRequests from './Request';
+import LoadingSpinner from './LoadingSpinner';
 
 
 
@@ -23,6 +24,10 @@ function Friends({ actor, currentPrincipal }) {
   const [selectedFriendProfile, setSelectedFriendProfile] = useState(null);
   const [searchTermForTunes, setSearchTermForTunes] = useState('');
   const [searchTermForFriendTunes, setSearchTermForFriendTunes] = useState('');
+  
+  const [filteredFriendTunes, setFilteredFriendTunes] = useState([]);
+  const [filteredMutualTunes, setFilteredMutualTunes] = useState([]);
+
 
   const [myTunes, setMyTunes] = useState([]); // State to store user's tunes
   const [totalTunes, setTotalTunes] = useState(0); // Total number of tunes
@@ -41,6 +46,7 @@ function Friends({ actor, currentPrincipal }) {
   const [showAddTuneModal, setShowAddTuneModal] = useState(false);
   const [newTuneTitle, setNewTuneTitle] = useState('');
   const [newTuneOrigin, setNewTuneOrigin] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [validationError, setValidationError] = useState("");
   const [newTuneData, setNewTuneData] = useState(`X: 1
@@ -75,7 +81,9 @@ abc def | gfe dcB | ...`;
 
 
 const fetchMyProfileAndTunes = async (page = 0) => {
+
   try {
+    setLoading(true);
     const profileArray = await actor.authentication(currentPrincipal);
     if (profileArray.length > 0) {
       const profile = profileArray[0];
@@ -90,9 +98,11 @@ const fetchMyProfileAndTunes = async (page = 0) => {
       const [tuneList, totalCount] = await actor.get_user_tune_list(currentPrincipal, page);
       setMyTunes(tuneList);
       setTotalTunes(totalCount);
+      setLoading(false);
     }
   } catch (error) {
     console.error('Failed to fetch profile or tunes:', error);
+    setLoading(false);
   }
 };
 
@@ -117,6 +127,23 @@ const groupLibraryTunes = (tunes) => {
   });
 
   return { library, singles };
+};
+
+// Function to remove a tune from the user's tunebook
+const removeTuneFromTunebook = async (tuneTitle) => {
+  try {
+    const success = await actor.remove_tune(currentPrincipal, tuneTitle);
+    if (success) {
+      // Filter out the removed tune from the list
+      setMyTunes(myTunes.filter((tune) => tune.title !== tuneTitle));
+      alert("Tune removed successfully.");
+    } else {
+      alert("Failed to remove the tune.");
+    }
+  } catch (error) {
+    console.error("Error removing tune:", error);
+    alert("An error occurred while removing the tune.");
+  }
 };
 
 
@@ -175,9 +202,6 @@ const fetchFriends = async () => {
     }
   };
   
-
-
-
   const sendFriendRequest = async (receiverPrincipal) => {
     try {
       if (!currentPrincipal) {
@@ -207,8 +231,6 @@ const fetchFriends = async () => {
     }
   };
   
-
-
 // Fetch friend's profile by principal
 const fetchFriendProfile = async (principal) => {
   console.log(`Fetching profile for principal: ${principal}`);
@@ -298,6 +320,7 @@ const fetchFriendProfile = async (principal) => {
 // Display selected friend's profile and their tunes
 const displayFriendProfile = async (friend) => {
   try {
+    setLoading(true);
         // Clear current tune data to remove the player when switching profiles
         setCurrentTuneData(null); 
         setCurrentTuneTitle(null);
@@ -306,13 +329,13 @@ const displayFriendProfile = async (friend) => {
     await fetchFriendTunes(friend.principal);   // Fetch friend's tunes
     //setSelectedFriend(friend);                 // Set the selected friend state
     setShowMyProfile(false);                   // Hide my profile view
-    setShowFriendRequests(false);              // Hide friend requests view
+    setShowFriendRequests(false); 
+    setLoading(false);             
   } catch (error) {
     console.error('Failed to fetch friend profile and tunes:', error);
+    setLoading(false);
   }
 };
-
-
 
 
 // -------------------------------------------------------------- 
@@ -323,6 +346,7 @@ const displayFriendProfile = async (friend) => {
 
 
 const handleMyProfileClick = () => {
+  setLoading(true);
       // Clear current tune data to remove the player when switching profiles
       setCurrentTuneData(null); 
       setCurrentTuneTitle(null);
@@ -331,18 +355,19 @@ const handleMyProfileClick = () => {
   setSelectedFriend(null); // Clear any selected friend
   setShowMyProfile(true); // Show my profile in the main content
   setShowFriendRequests(false);  
+  setLoading(false);
 };
 
 // Function to handle friend requests button click
 const handleFriendRequestsClick = async () => {
+  setLoading(true);
   await fetchFriendRequests();  // Fetch latest friend requests
   setSelectedFriendProfile(null);
   setShowFriendRequests(true);  // Show friend requests
   setShowMyProfile(false);      // Hide my profile
   setSelectedFriend(null);      // Clear any selected friend
+  setLoading(false);
 };
-
-
 
   useEffect(() => {
     if (currentPrincipal) {
@@ -421,19 +446,22 @@ const convertUint8ArrayToBase64 = (uint8Array) => {
     }
 
     try {
-      const modifiedTitle = `${title}_+TBusername+:_${myProfile.username}`;
+      setLoading(true);
+      const username = myProfile.username;
 
       const success = await actor.add_tune(
         currentPrincipal,
-        modifiedTitle,  
+        title,  
         newTuneData,
-        false  
+        false,
+        username
       );
 
       if (success) {
         alert("Tune added successfully!");
         fetchMyProfileAndTunes();
 
+        setValidationError("");  
         setValidationError("");  
         setNewTuneData(`X: 1
 T: Tune Title
@@ -445,18 +473,17 @@ K: D
 
 abc def | gfe dcB | ...`);  
         toggleAddTuneModal();  
+        setLoading(false);
       } else {
+        setLoading(false);
         alert("A tune with this title already exists.");
       }
     } catch (error) {
       console.error("Error adding tune:", error);
       alert("Failed to add tune. Please try again.");
+      setLoading(false);
     }
   };
-
-
-
-
 
 
 
@@ -579,9 +606,28 @@ abc def | gfe dcB | ...`);
       tune.title.toLowerCase().includes(searchTermForTunes.toLowerCase())
     );
 
-    const filteredFriendTunes = friendTunes.filter((tune) =>
-      tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase())
-    );
+    // Update filteredFriendTunes when searchTermForFriendTunes or friendTunes changes
+    useEffect(() => {
+      setFilteredFriendTunes(
+        friendTunes.filter((tune) =>
+          tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase())
+        )
+      );
+    }, [searchTermForFriendTunes, friendTunes]);
+
+    // Update filteredMutualTunes when searchTermForFriendTunes or mutual tunes change
+    useEffect(() => {
+      setFilteredMutualTunes(
+        friendTunes.filter((friendTune) =>
+          myTunes.some((myTune) => myTune.title === friendTune.title)
+        ).filter((tune) =>
+          tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase())
+        )
+      );
+    }, [searchTermForFriendTunes, friendTunes, myTunes]);
+
+    
+
     
     // Function to get mutual tunes
     const getMutualTunes = () => {
@@ -590,9 +636,6 @@ abc def | gfe dcB | ...`);
       );
     };
 
-    const filteredMutualTunes = getMutualTunes().filter((tune) =>
-      tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase())
-    );
 
     // Select tunes to display based on the active tab
     const tunesToDisplay = activeFriendTab === 'all' ? filteredFriendTunes : filteredMutualTunes;
@@ -607,6 +650,7 @@ const cleanTitle = (title) => {
 // Function to fetch the latest friend requests
 const fetchFriendRequests = async () => {
   try {
+    setLoading(true);
     const profileArray = await actor.authentication(currentPrincipal);
     if (profileArray.length > 0) {
       const profile = profileArray[0];
@@ -614,13 +658,13 @@ const fetchFriendRequests = async () => {
       setReceivedRequests(profile.incoming_fr);  // Update received requests
       setSentRequests(profile.outcoming_fr);     // Update sent requests
     }
+    setLoading(false);
   } catch (error) {
     console.error('Failed to fetch friend requests:', error);
+    setLoading(false);
   }
 };
 
-
-    
 
   // -------------------------------------------------------------- 
   // -------------------------------------------------------------- 
@@ -629,6 +673,10 @@ const fetchFriendRequests = async () => {
   // -------------------------------------------------------------- 
   return (
     <div className="friends-page">
+
+
+      {loading && <LoadingSpinner />}
+
       {/* Sidebar: Profile Options and Search */}
       <div className="friends-list">
         <button className="my-profile-button" onClick={() => handleMyProfileClick()}>
@@ -740,7 +788,7 @@ const fetchFriendRequests = async () => {
         
           <button  className="add-new-tune"
             onClick={toggleAddTuneModal}>
-              Add Tune
+              + Add a New Tune
             </button>
         
             <Modal
@@ -758,7 +806,7 @@ const fetchFriendRequests = async () => {
                   <textarea
                     value={newTuneData}
                     onChange={(e) => setNewTuneData(e.target.value)}
-                    rows="12"
+                    rows="10"
                     required
                   />
                 </label>
@@ -783,8 +831,8 @@ const fetchFriendRequests = async () => {
 
             </Modal>
 
-           {/* Render saved tunes */}
-           <h3>My Tunes:</h3>
+           {/* Render saved tunes 
+           <h3>My Tunes:</h3> */}
             <div className="tunes-lists-container">
             {/* Search bar for tunes */}
             <input
@@ -802,7 +850,7 @@ const fetchFriendRequests = async () => {
                 marginRight: '10px',
                 marginLeft: '9px',
                 paddingRight: '10px',
-                border: '3px solid #58d289',
+                border: '3px solid #58b0d2',
               }}
             />
 
@@ -832,9 +880,18 @@ const fetchFriendRequests = async () => {
               {cleanTitle(tune.title.split("_")[0])}</h3>
 
                     <p className="tune-idF">
-                    Added by: {username || "Tunebook"}
+                    Added by: {tune.username && String(tune.username).trim() !== "" ? tune.username : "Tunebook"}
                     </p>
-
+                    
+              <button
+              className="remove-tune-button"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering onSelectTune
+                removeTuneFromTunebook(tune.title); // Call the remove function
+              }}
+            >
+              Remove
+            </button>
 
                   </div>
                 </div>
@@ -940,23 +997,13 @@ const fetchFriendRequests = async () => {
 
         {/* Search bar for friend's tunes */}
         <input
-              type="text"
-              placeholder="Search tunes..."
-              value={searchTermForTunes}
-              onChange={(e) => setSearchTermForTunes(e.target.value)}
-              style={{
-                width: '95%',
-                height: '15px',
-                padding: '8px',
-                marginTop: '10px',
-                marginBottom: '10px',
-                borderRadius: '8px',
-                marginRight: '10px',
-                marginLeft: '1px',
-                paddingRight: '10px',
-                border: '3px solid #58d289',
-              }}
-            />
+            type="text"
+            placeholder="Search tunes..."
+            value={searchTermForFriendTunes}
+            onChange={(e) => setSearchTermForFriendTunes(e.target.value)}
+            style={{ width: '95%', height: '15px', padding: '8px', marginTop: '10px', marginBottom: '10px', borderRadius: '8px', border: '3px solid #58d289' }}
+          />
+
 
       {/* Tabs for "All Tunes" and "Mutual Tunes" */}
        <div className="tabs">
@@ -976,39 +1023,37 @@ const fetchFriendRequests = async () => {
 
         {/* Display the filtered tunes based on the active tab */}
         <div className="tune-listF">
-       
           {tunesToDisplay.length > 0 ? (
             tunesToDisplay.map((tune, index) => (
               <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
                 <div className="tune-detailsF">
-                <h3 className="tune-titleF">
-              <span className="play-icon-circleF">
-
-                <svg
-                  className="play-iconF"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-
-                  <path d="M8 5v10l8-5z" /> 
-                </svg>
-              </span>
-
-              {cleanTitle(tune.title.split("_")[0])}</h3>
-             
-
-         <p className="tune-idF">
-             Added by: {tune.title.split("_+TBusername+:_")[1] || "Tunebook"}
-         </p>
-                  </div>
-                  </div>
+                  <h3 className="tune-titleF">
+                    <span className="play-icon-circleF">
+                      <svg
+                        className="play-iconF"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M8 5v10l8-5z" /> 
+                      </svg>
+                    </span>
+                    {cleanTitle(tune.title.split("_")[0])}
+                  </h3>
+                  <p className="tune-idF">
+                  Added by: {tune.username && String(tune.username).trim() !== "" ? tune.username : "Tunebook"}
+                  </p>
+                </div>
+              </div>
             ))
           ) : (
             <p>{selectedFriendProfile.username} has no tunes.</p>
           )}
-     
         </div>
+
+
+
+
         </div>
 
             {/* Tune Details with Tabs */}
@@ -1141,6 +1186,8 @@ const fetchFriendRequests = async () => {
 
         </div>
         </div>
+
+
 );
 }
 

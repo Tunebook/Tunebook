@@ -16,6 +16,7 @@ import FeedbackForm from './components/Feedback';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Login from './components/Login';
+import LoadingSpinner from './components/LoadingSpinner'; 
 
 const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
 
@@ -36,28 +37,54 @@ function App() {
   const [activeSession, setActiveSession] = useState(false);
   const [activeFriends, setActiveFriends] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login state
+  const [loading, setLoading] = useState(false);
   const sidebarRef = useRef(null);
+  const refreshInterval = 5 * 60 * 1000;
+
 
   useEffect(() => {
     const initAuthClient = async () => {
+      setLoading(true); 
       const auth = await AuthClient.create();
       setAuthClient(auth);  // Store the AuthClient instance
     
       if (await auth.isAuthenticated()) {
         console.log('User is already authenticated');
         handleLogin(auth.getIdentity());
+        setLoading(false);
       } else {
         console.log('User is not authenticated');
+        setLoading(false);
       }
     };
   
     initAuthClient();
   }, []);
 
+
+  useEffect(() => {
+    // Set up periodic session refresh
+    const refreshSession = async () => {
+      if (authClient && (await authClient.isAuthenticated())) {
+        const identity = authClient.getIdentity();
+        handleLogin(identity); // Refresh the session by re-authenticating
+      }
+    };
+    
+    // Set interval for session refresh
+    const intervalId = setInterval(refreshSession, refreshInterval);
+    
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [authClient]);
+  
+
   useEffect(() => {
     const actorInstance = initActor();  
     setActor(actorInstance);  
   }, []);
+
+
 
   // Authenticate user and fetch profile
   const handleLogin = async (identity) => {
@@ -171,14 +198,16 @@ function App() {
     }, [sidebarOpen]);
 
 
-
   return (
     <div className={`app-container ${sidebarOpen ? 'sidebar-open' : ''}`}>
+
+      {loading && <LoadingSpinner />}
+
       {/* Navigation Bar */}
       <nav className="navbar">
         <div className="navbar-brand" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
         {  <img src="/Tunebook_Logo.png" alt="Logo" className="navbar-logo" /> }
-          <img src="/Tunebook-Name.png" alt="Tunebook Title" className="navbar-title" />  {/* Use the imported PNG */}
+          <img src="/Tunebook-Name.png" alt="Tunebook Title" className="navbar-title" /> 
         </div>
         <div className="navbar-links">
         <div
@@ -186,7 +215,7 @@ function App() {
             onClick={() => handleFeedbackClick()}
             style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
-            Feedback
+             📝 Feedback
           </div>
 
           <div
@@ -194,7 +223,7 @@ function App() {
             onClick={() => handleSessionsClick()}
             style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
-            Sessions
+           📍 Sessions
           </div>
 
           <div
@@ -202,7 +231,7 @@ function App() {
             onClick={() => handleFriendsClick()}
             style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
-            Friends
+            👤 Profile
           </div>
 
           {/* Toggle between Login and Logout buttons based on the isLoggedIn state */}
@@ -218,19 +247,24 @@ function App() {
       <div ref={sidebarRef} className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-content">
           <h2>Connect To Get Started</h2>
-          <p>Sign in to access your profile and interact with the platform.</p>
+          <p style={{ textAlign: "center" }}>Sign in to use the platform.</p>
+
 
           {/* Use the LoginOptions component for logins */}
           {<LoginOptions onLoginICP={loginICP} onLoginNFID={loginNFID} />}
+
+          <h3 className="terms-text">
+            By Connecting, you agree to have read and understood and accept the{" "}
+            <a href="/terms-of-service" target="_blank" rel="noopener noreferrer">
+              Terms of Service.
+            </a>
+          </h3>
         </div>
 
-        {/* Close Sidebar Button */}
-        <button className="close-sidebar" onClick={() => setSidebarOpen(false)}>✖ Close</button>
       </div>
 
       {/* Main Content */}
       <div className="main-content">
-
 
         <Routes>
           
@@ -240,44 +274,26 @@ function App() {
               <>
                 <ImageCarousel />
 
-                <div className="info-box" style={{
-                  textAlign: 'center',
-                  padding: '20px',
-                  margin: '10px 0',
-                  color: '#fff',
-                  borderRadius: '8px',
-                  maxWidth: '1100px',
-                  justifySelf: 'center'
-                }}>
-               
-                <p style={{ fontSize: '18px', lineHeight: '1.6' }}>
-                  Explore a large collection of over <strong>18,000 tunes</strong>! 
-                  Tunebook is a powerful platform for musicians to <strong>create, store, and share</strong> their tunes with the world.
-                  Whether you're looking for inspiration or want to build your own digital library, Tunebook has you covered. Connect
-                  with other Celtic musicians and find mutual tunes with them for your sessions. Find the latest sessions happening around your area. 
-                </p>
 
-              </div>
-
-          
-
-
-
+              
                 {actor ? (
                   <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} />
                 ) : (
                   <p>Loading Tunes.</p>
                 )}
+          
+
+
               </>
             } 
           />
+
           <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available, try refreshing this page.</p>} />
           
           <Route path="/sessions" element={actor ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available, try refreshing this page.</p>} />
           <Route path="/friends" element={actor ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available, try refreshing this page.</p>} />
           <Route path="/login" element={<Login setAuthClient={setAuthClient} setCurrentAccount={setCurrentAccount} setActor={setActor} setIsLoggedIn={setIsLoggedIn} />} />
         
-          
           <Route path="/tunes" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} /> : <p>Please log in to view tunes.</p>} />
           <Route path="/faq" element={<FAQ />} />
 
@@ -288,7 +304,6 @@ function App() {
           <Route path="/terms-of-service" element={<TermsOfService />} />
 
         </Routes>
-
 
         <Footer />
 

@@ -3,7 +3,11 @@ import ABCJS from "abcjs";
 import 'abcjs/abcjs-audio.css';
 import ReactPaginate from "react-paginate";
 import Select from 'react-select';
+import { useNavigate } from 'react-router-dom'; 
 import { keyInfo, rhythmInfo } from './variables';  
+import Modal from 'react-modal'; 
+import LoadingSpinner from "./LoadingSpinner";
+   
 
 function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
   const [orgTunes, setOrgTunes] = useState([]);  
@@ -20,10 +24,39 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
   const [userTunes, setUserTunes] = useState([]);  
   const [abcNotation, setAbcNotation] = useState("");
   const [selectedTab, setSelectedTab] = useState("sheet"); 
+  const [loading, setLoading] = useState(false); 
+
+  const navigate = useNavigate();
 
   const [visualObj, setVisualObj] = useState(null);
   const synth = new ABCJS.synth.CreateSynth();
   const synthControl = new ABCJS.synth.SynthController();
+
+    // Modal state for adding a new tune
+    const [showAddTuneModal, setShowAddTuneModal] = useState(false);
+    const [newTuneData, setNewTuneData] = useState(`X: 1
+T: Tune Title
+Z: Composer (optional)
+S: Source or link (optional)
+R: Rhythm (e.g., jig, reel)
+M: 4/4
+K: D
+
+abc def | gfe dcB | ...`);  
+
+
+    const [validationError, setValidationError] = useState("");
+    const abcTemplate = `X: 1
+T: Tune Title
+Z: Composer (optional)
+S: Source or link (optional)
+R: Rhythm (e.g., jig, reel)
+M: 4/4
+K: D
+
+abc def | gfe dcB | ...`;  
+          
+
 
   // Helper function to clean up the tune title
   const cleanTitle = (title) => {
@@ -45,44 +78,49 @@ function Tunes({ actor, currentPrincipal, setSidebarOpen }) {
     }
   }, [selectedTab, currentTuneData]);
 
+
+
   // Fetch user's profile tunes
   const fetchUserTunes = async () => {
     try {
+      
       if (!currentPrincipal) return;
       const [tuneList] = await actor.get_user_tune_list(currentPrincipal, 0);
       const userTuneTitles = tuneList.map(tune => tune.title);
       setUserTunes(userTuneTitles);
     } catch (error) {
       console.error("Error fetching user's tunes:", error);
-    }
+    } 
   };
   
 
   const fetchTunes = async () => {
     try {
+     
       const response = await actor.filter_tunes(
         searchTitle,
         rhythm.value.toLowerCase(),
         key.value,
         currentPage
       );
+      
       const tunes = response[0];
       const totalCount = response[1];
 
-      // Group library tunes (tunes with multiple versions) on this page, if any
       const libraryTunes = groupLibraryTunes(tunes);
       setLibraryTunes(libraryTunes);
 
-      // Filter out the tunes with versions from the regular tunes list
       const regularTunes = tunes.filter(tune =>
         !libraryTunes.some(lib => lib.baseTitle === tune.title.split('_')[0])
       );
       setOrgTunes(regularTunes);
 
       setTotalPages(Math.ceil(totalCount / tunesPerPage));
+ 
     } catch (error) {
       console.error("Error fetching tunes:", error);
     }
+    
   };
 
 const groupLibraryTunes = (tunes) => {
@@ -151,21 +189,25 @@ const groupLibraryTunes = (tunes) => {
     setCurrentPage(data.selected);
   };
 
+
   const handleAddTune = async (tune) => {
     try {
       if (!currentPrincipal) {
         alert("You must be logged in to add tunes.");
+        //navigate('/login');
         setSidebarOpen(true);
         return;
       }
 
       const tuneData = await actor.get_original_tune(tune.title);
+      const username = tune.username ? String(tune.username).trim() : "Tunebook";
+
       if (!tuneData) {
         console.error("Failed to retrieve tune data.");
         return;
       }
 
-      const success = await actor.add_tune(currentPrincipal, tune.title, tuneData, false);
+      const success = await actor.add_tune(currentPrincipal, tune.title, tuneData, false, username);
       if (success) {
         setUserTunes((prev) => [...prev, tune.title]);
       }
@@ -174,8 +216,117 @@ const groupLibraryTunes = (tunes) => {
     }
   };
 
+    // Toggle Add Tune Modal
+    const toggleAddTuneModal = () => {
+      setShowAddTuneModal(!showAddTuneModal);
+      setValidationError(""); // Clear validation error when modal is toggled
+    };
+  
+    // ABCJS live preview effect
+    useEffect(() => {
+      if (showAddTuneModal) {
+        ABCJS.renderAbc("abc-preview", newTuneData || abcTemplate);
+      }
+    }, [newTuneData, showAddTuneModal]);
+  
+
+
+
+  const validateABCNotation = (abc) => {
+    const hasX = abc.match(/^X:\s*\d+/m);
+    const hasT = abc.match(/^T:\s*.+/m);
+    const hasK = abc.match(/^K:\s*.+/m);
+    return hasX && hasT && hasK;
+  };
+
+  const handleAddTuneSubmit = async (e) => {
+    
+    e.preventDefault();
+    setLoading(true);
+    try {
+    if (!currentPrincipal) {
+      alert("You must be logged in to add tunes.");
+      navigate('/login');
+      //setSidebarOpen(true);
+      return;
+    }
+
+    if (!validateABCNotation(newTuneData)) {
+      setValidationError("Invalid ABC notation. Ensure it includes 'X:', 'T:', and 'K:' fields.");
+      return;
+    }
+
+    const title = newTuneData.match(/^T:\s*(.*)/m)?.[1]?.trim();
+    if (!title) {
+      setValidationError("Please ensure your ABC notation includes a title with 'T:'.");
+      return;
+    }
+    const profileArray = await actor.authentication(currentPrincipal);
+    const Profile_username = profileArray?.[0]?.username;
+
+      const success = await actor.add_tune(
+        currentPrincipal,
+        title,
+        newTuneData,
+        false,
+        Profile_username
+      );
+
+      if (success) {
+        alert("Tune added successfully!");
+        setValidationError("");  
+        setNewTuneData(`X: 1
+T: Tune Title
+Z: Composer (optional)
+S: Source or link (optional)
+R: Rhythm (e.g., jig, reel)
+M: 4/4
+K: D
+
+abc def | gfe dcB | ...`);
+
+        toggleAddTuneModal();  
+        fetchTunes();
+        setLoading(false);
+      } else {
+        alert("A tune with this title already exists.");
+      }
+    } catch (error) {
+      console.error("Error adding tune:", error);
+      alert("Failed to add tune. Please try again.");
+      setLoading(false);
+    }
+    setLoading(false);
+  };
+
+
   return (
-<div className="tune-app-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', color: 'white' }}>
+
+<div className="tune-app-container" style={{ color: 'white' }}>
+
+    {loading && <LoadingSpinner />}
+
+    
+
+    <div className="mid-app-container" >      
+    <p style={{ fontSize: '18px', lineHeight: '1.6', justifyContent: 'center', textAlign: 'justify'}}>
+                  Explore a large collection of over <strong>18,000 tunes</strong>! 
+                  Tunebook is a powerful platform for musicians to <strong>create, store, and share</strong> their tunes with the world.
+                  Whether you're looking for inspiration or want to build your own digital library, Tunebook has you covered. 
+                  
+                  Connect with other Celtic musicians and find mutual tunes with them for your sessions. Find the latest sessions happening around your area. 
+    </p>          
+    </div>
+
+    <div className="mid-container" >
+
+    <button  className="add-new-tunes" 
+            onClick={toggleAddTuneModal}>
+              + Add a New Tune
+    </button>
+
+   </div>
+
   <h2 className="title" style={{ fontSize: '30px', textAlign: 'center', marginBottom: '20px' }}>Browse Tunes</h2>
 
   <div className="search-filter" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -190,92 +341,130 @@ const groupLibraryTunes = (tunes) => {
         padding: '10px',
         borderRadius: '8px',
         backgroundColor: '#222',
-        border: '2px solid #58d289',
         color: '#fff',
       }}
     />
     
-    <Select
-      value={rhythm}
-      onChange={(value) => setRhythm(value)}
-      options={rhythmInfo}
-      className="select-filter"
-      styles={{
-        container: (base) => ({
-          ...base,
-          width: '200px',
-          marginRight: '10px',
-          
-        }),
-        control: (base) => ({
-          ...base,
-          backgroundColor: '#222',
-          border: '2px solid #58d289',
-          color: '#fff',
-        }),
-        singleValue: (base) => ({
-          ...base,
-          color: '#fff',
-        }),
-        menu: (base) => ({
-          ...base,
-          backgroundColor: '#333',
-          color: '#fff',
-          border: '1px solid #58d289',
-        }),
-        option: (base, { isFocused, isSelected }) => ({
-          ...base,
-          backgroundColor: isSelected ? '#58d289' : isFocused ? '#444' : '#333',
-          color: isSelected ? '#000' : '#fff',
-          cursor: 'pointer',
-        }),
-        placeholder: (base) => ({
-          ...base,
-          color: '#888',
-        }),
-      }}
-    />
+            <Select
+              value={rhythm}
+              onChange={(value) => setRhythm(value)}
+              options={rhythmInfo}
+              className="select-filter"
+              styles={{
+                container: (base) => ({
+                  ...base,
+                  width: '200px',
+                  marginRight: '10px',
+                  
+                }),
+                control: (base) => ({
+                  ...base,
+                  backgroundColor: '#222',
+                  border: '2px solid #58b0d2;',
+                  color: '#fff',
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  color: '#fff',
+                }),
+                menu: (base) => ({
+                  ...base,
+                  backgroundColor: '#333',
+                  color: '#fff',
+                  border: '1px solid #58d289',
+                }),
+                option: (base, { isFocused, isSelected }) => ({
+                  ...base,
+                  backgroundColor: isSelected ? '#58d289' : isFocused ? '#444' : '#333',
+                  color: isSelected ? '#000' : '#fff',
+                  cursor: 'pointer',
+                }),
+                placeholder: (base) => ({
+                  ...base,
+                  color: '#888',
+                }),
+              }}
+            />
 
-    <Select
-      value={key}
-      onChange={(value) => setKey(value)}
-      options={keyInfo}
-      className="select-filter"
-      styles={{
-        container: (base) => ({
-          ...base,
-          width: '200px',
-        }),
-        control: (base) => ({
-          ...base,
-          backgroundColor: '#222',
-          border: '2px solid #58d289',
-          color: '#fff',
-        }),
-        singleValue: (base) => ({
-          ...base,
-          color: '#fff',
-        }),
-        menu: (base) => ({
-          ...base,
-          backgroundColor: '#333',
-          color: '#fff',
-          border: '1px solid #58d289',
-        }),
-        option: (base, { isFocused, isSelected }) => ({
-          ...base,
-          backgroundColor: isSelected ? '#58d289' : isFocused ? '#444' : '#333',
-          color: isSelected ? '#000' : '#fff',
-          cursor: 'pointer',
-        }),
-        placeholder: (base) => ({
-          ...base,
-          color: '#888',
-        }),
-      }}
-    />
-  </div>
+            <Select
+              value={key}
+              onChange={(value) => setKey(value)}
+              options={keyInfo}
+              className="select-filter"
+              styles={{
+                container: (base) => ({
+                  ...base,
+                  width: '200px',
+                }),
+                control: (base) => ({
+                  ...base,
+                  backgroundColor: '#222',
+                  border: '2px solid #58b0d2;',
+                  color: '#fff',
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  color: '#fff',
+                }),
+                menu: (base) => ({
+                  ...base,
+                  backgroundColor: '#333',
+                  color: '#fff',
+                  border: '1px solid #58d289',
+                }),
+                option: (base, { isFocused, isSelected }) => ({
+                  ...base,
+                  backgroundColor: isSelected ? '#58d289' : isFocused ? '#444' : '#333',
+                  color: isSelected ? '#000' : '#fff',
+                  cursor: 'pointer',
+                }),
+                placeholder: (base) => ({
+                  ...base,
+                  color: '#888',
+                }),
+              }}
+            />
+          </div>
 
+          <Modal
+              isOpen={showAddTuneModal}
+              onRequestClose={toggleAddTuneModal}
+              contentLabel="Add Tune"
+              ariaHideApp={false}
+              className="add-tune-modal"
+              overlayClassName="modal-overlay"
+            >
+              <h2>Add New Tune</h2>
+              <form onSubmit={handleAddTuneSubmit}>
+                <label>
+                  Tune Data (ABC Notation):
+                  <textarea
+                    value={newTuneData}
+                    onChange={(e) => setNewTuneData(e.target.value)}
+                    rows="10"
+                    required
+                  />
+                </label>
+                <p className="abc-instructions">
+                  Enter ABC notation. Ensure it includes at least an "X:", "T:", and "K:" field.
+                </p>
+
+                {validationError && <p className="error-message">{validationError}</p>}
+
+                <button type="submit">Save Tune</button>
+                <button type="button" onClick={toggleAddTuneModal}>
+                  Cancel
+                </button>
+              </form>
+
+              
+              <h3>ABC Notation Preview:</h3>
+              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+              <div id="abc-preview">
+              </div>
+              </div>
+
+            </Modal>
 
 
             {/* Tune Details with Tabs */}
@@ -346,6 +535,9 @@ const groupLibraryTunes = (tunes) => {
                 <div id="player" className="abc-player"></div>
                 
               </div>
+
+
+              
             )}
 
       <div className="tune-list">
@@ -372,7 +564,7 @@ const groupLibraryTunes = (tunes) => {
             </p>
             
             <p className="tune-id">
-              Added by: {tune.title.split("_+TBusername+:_")[1] || "Tunebook"}
+            Added by: {tune.username && String(tune.username).trim() !== "" ? tune.username : "Tunebook"}
             </p>
 
                 <button
@@ -429,11 +621,15 @@ const groupLibraryTunes = (tunes) => {
                     <path d="M8 5v10l8-5z" /> 
                   </svg>
                 </span>
-                {cleanTitle(tune.title.split("_+TBusername+:_")[0])} 
+                {cleanTitle(tune.title.split("_")[0])} 
               </p>
 
-                <p className="tune-id">{tune.title.split("_")[1]}</p>
-                Added by: {tune.title.split("_+TBusername+:_")[1] || "Tunebook"}
+                <p className="tune-id">{tune.title.split("_")[1]}
+                 </p>
+
+                 <p className="tune-id">
+                 Added by: {tune.username && String(tune.username).trim() !== "" ? tune.username : "Tunebook"} 
+                 </p>
                 
                 <button
                   className="add-tune-button"

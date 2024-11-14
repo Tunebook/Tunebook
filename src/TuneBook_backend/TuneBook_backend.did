@@ -16,6 +16,7 @@ type Tune = record {
     "tune_data": opt text;
     "timestamp": nat64;
     "principals": vec text;
+    "username": opt text;
 };
 
 type Session = record {
@@ -39,6 +40,7 @@ type Friend = record {
 type Tuneinfo = record {
     "title": text;
     "tune_data": text;
+    "username": opt text;
 };
 
 service : (nat64) -> {
@@ -48,8 +50,8 @@ service : (nat64) -> {
     "get_original_tune": (text) -> (text) query;
     "get_user_tune_list": (text, int32) -> (vec Tuneinfo, int32) query;
     "get_user_tune": (text, text) -> (text) query;
-    "add_tune": (text, text, text, bool) -> (bool);
-    "update_tune": (text, text, text, bool) -> (bool);
+    "add_tune": (text, text, text, bool, text) -> (bool);
+    "update_tune": (text, text, text, bool, text) -> (bool);
     "get_friends": (text) -> (vec Friend) query;
     "send_friend_request": (text, text) -> (opt Friend);
     "accept_friend_request": (text, text)-> (bool);
@@ -61,5 +63,9 @@ service : (nat64) -> {
     "add_session": (text, text, text, text, text, text, text, text) -> (bool);
     "update_session": (nat32, text, text, text, text, text, text, text, text) -> (bool);
     "delete_session": (nat32, text) -> (bool); 
+    "get_profile_count": () -> (nat64) query;
+    "get_tune_count": () -> (nat64) query;
+    "get_session_count": () -> (nat64) query;
+    "remove_tune": (text, text) -> (bool);
 }
 
