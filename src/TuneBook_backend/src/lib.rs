@@ -140,6 +140,21 @@ pub fn remove_tune(principal: String, title: String) -> bool {
 }
 
 #[ic_cdk::query]
+pub fn get_instruments(sub_name: String, page_num: i32) -> (Vec<types::Instrument>, i32) {
+    utils::get_instruments(sub_name.as_str(), page_num)
+}
+
+#[ic_cdk::update]
+pub fn add_instrument(seller_principal: String, buyer_principal: String, username: String, name: String, location: String, product: String, comment: String, price: String, photos: Vec<Vec<u8>>) -> bool {
+    utils::add_instrument(seller_principal, buyer_principal, username, name, location, product, comment, price, photos)
+}
+
+#[ic_cdk::update]
+pub fn delete_instrument(id: u32, seller_principal: String) -> bool {
+    utils::delete_instrument(id, seller_principal)
+}
+
+#[ic_cdk::query]
 fn get_profile_count() -> u64 {
     utils::get_profile_count()
 }

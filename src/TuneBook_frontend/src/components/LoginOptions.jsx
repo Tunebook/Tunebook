@@ -5,7 +5,7 @@ function LoginOptions({ onLoginICP, onLoginNFID }) {
     <div className="login-options">
       {/* IC Identity Login Button */}
       <button className="login-button" onClick={onLoginICP}>
-        <span>IC Identity</span>
+        <span>Internet Identity</span>
         <img src="/images/icp-logo.png" alt="IC Identity Logo" className="login-icon" />
       </button>
 

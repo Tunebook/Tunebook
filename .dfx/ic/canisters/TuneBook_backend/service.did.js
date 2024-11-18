@@ -20,6 +20,18 @@ export const idlFactory = ({ IDL }) => {
     'username' : IDL.Opt(IDL.Text),
     'tune_data' : IDL.Text,
   });
+  const Instrument = IDL.Record({
+    'id' : IDL.Nat32,
+    'username' : IDL.Text,
+    'name' : IDL.Text,
+    'comment' : IDL.Text,
+    'seller_principal' : IDL.Text,
+    'buyer_principal' : IDL.Text,
+    'price' : IDL.Text,
+    'location' : IDL.Text,
+    'product' : IDL.Text,
+    'photos' : IDL.Vec(IDL.Vec(IDL.Nat8)),
+  });
   const Tune = IDL.Record({
     'title' : IDL.Text,
     'username' : IDL.Opt(IDL.Text),
@@ -41,6 +53,21 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'accept_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'add_instrument' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Vec(IDL.Vec(IDL.Nat8)),
+        ],
+        [IDL.Bool],
+        [],
+      ),
     'add_session' : IDL.Func(
         [
           IDL.Text,
@@ -67,6 +94,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'cancel_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'delete_instrument' : IDL.Func([IDL.Nat32, IDL.Text], [IDL.Bool], []),
     'delete_session' : IDL.Func([IDL.Nat32, IDL.Text], [IDL.Bool], []),
     'filter_tunes' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Int32],
@@ -74,6 +102,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'get_friends' : IDL.Func([IDL.Text], [IDL.Vec(Friend)], ['query']),
+    'get_instruments' : IDL.Func(
+        [IDL.Text, IDL.Int32],
+        [IDL.Vec(Instrument), IDL.Int32],
+        ['query'],
+      ),
     'get_new_tunes_from_friends' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(Tune)],

@@ -43,6 +43,19 @@ type Tuneinfo = record {
     "username": opt text;
 };
 
+type Instrument = record {
+    "id": nat32;
+    "seller_principal": text;
+    "buyer_principal": text;
+    "username": text;
+    "name": text;
+    "location": text;
+    "product": text;
+    "comment": text;
+    "price": text;
+    "photos": vec blob;
+}
+
 service : (nat64) -> {
     "authentication": (text) -> (opt Profile) query;
     "update_profile": (text, text, text, text, text, blob) -> (Profile);
@@ -67,5 +80,8 @@ service : (nat64) -> {
     "get_tune_count": () -> (nat64) query;
     "get_session_count": () -> (nat64) query;
     "remove_tune": (text, text) -> (bool);
+    "add_instrument": (text, text, text, text, text, text, text, text, vec blob) -> (bool);
+    "get_instruments": (text, int32) -> (vec Instrument, int32) query;
+    "delete_instrument": (nat32, text) -> (bool); 
 }
 

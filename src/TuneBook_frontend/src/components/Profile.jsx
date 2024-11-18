@@ -179,7 +179,7 @@ function Profile({ actor, currentPrincipal }) {
                     placeholder="Tell us about yourself"
                     style={{
                       marginTop: '10px',
-                      backgroundColor: '#333',
+                      backgroundColor: '#122',
                       color: 'white'
                     }
                     } 

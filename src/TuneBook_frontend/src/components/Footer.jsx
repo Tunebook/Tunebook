@@ -24,6 +24,7 @@ function Footer() {
         <div className="footer-right">
           <h4>Tunebook</h4>
           <ul className="footer-links">
+            <li><Link to="/about-us">About Us</Link></li>
             <li><Link to="/feedback">Feedback</Link></li>
             <li><Link to="/faq">FAQ</Link></li>
             <li><Link to="/Tunes">Tunes</Link></li>

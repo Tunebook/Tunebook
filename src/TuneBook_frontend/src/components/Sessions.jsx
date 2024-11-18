@@ -481,7 +481,62 @@ const handleUpdateSessionClick = (session) => {
   setShowUpdateModal(true); // Open the modal for editing
 };
 
-// Pre-fill form fields with selected session data when `selectedSession` changes
+
+// Function to handle session updates
+const handleUpdateSession = async () => {
+  if (!currentPrincipal) {
+    alert("You must be logged in to update a session.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // Fetch the current user's profile to get the username
+    const profile = await actor.authentication(currentPrincipal);
+    const username = Array.isArray(profile) && profile.length > 0 ? profile[0].username : profile.username || "Unknown";
+
+    // Call the backend function to update the session
+    const success = await actor.update_session(
+      selectedSession.id,
+      currentPrincipal,
+      username,
+      name,
+      location,
+      daytime,
+      contact,
+      comment,
+      recurring
+    );
+
+    if (success) {
+      alert("Session updated successfully!");
+      setErrorMessage('');
+      setName('');
+      setLocation('');
+      setDaytime('');
+      setContact('');
+      setComment('');
+      setRecurring('N/A');
+      
+      setShowUpdateModal(false); // Close the update modal
+
+      // Fetch sessions from the backend to refresh the state with latest data
+      fetchSessions();
+    } else {
+      alert("Failed to update session. You may not have permission.");
+    }
+
+    setLoading(false);
+  } catch (error) {
+    console.error("Error updating session:", error);
+    alert("Error updating session. Please try again.");
+    setLoading(false);
+  }
+};
+
+
+// Pre-fill form fields with the selected session data
 useEffect(() => {
   if (selectedSession) {
     setName(selectedSession.name || "");
@@ -493,62 +548,6 @@ useEffect(() => {
   }
 }, [selectedSession]);
 
-const handleUpdateSession = async () => {
-  setLoadingAddSession(true);
-
-  try {
-    if (!currentPrincipal) {
-      setLoadingAddSession(false);
-      setErrorMessage('You must be logged in to update a session.');
-      return;
-    }
-
-    const username = (await actor.authentication(currentPrincipal))?.username || 'Unknown';
-
-        // Ensure ID is a nat32-compatible number
-        const sessionId = parseInt(selectedSession.id, 10);
-        if (isNaN(sessionId) || sessionId < 0) {
-          setErrorMessage("Invalid session ID");
-          setLoadingAddSession(false);
-          return;
-        }
-
-        const success = await actor.update_session(
-          sessionId,  // Ensure the session ID is a valid integer
-          currentPrincipal,
-          username,
-          name,
-          location,
-          daytime,
-          contact,
-          comment || "N/A",  // Default to 'N/A' if empty
-          recurring || "N/A"  // Default to 'N/A' if empty
-        );
-
-    if (success) {
-      setSuccessMessage('Session updated successfully!');
-      setErrorMessage('');
-      // Reset form fields
-      setName('');
-      setLocation('');
-      setDaytime('');
-      setContact('');
-      setComment('');
-      setRecurring('N/A');
-      fetchSessions(); // Refresh sessions list
-      setShowUpdateModal(false); // Close modal after successful update
-    } else {
-      setErrorMessage('Failed to update session. You may lack permission.');
-      alert("Failed to update session.");
-      setShowUpdateModal(false);
-    }
-  } catch (error) {
-    console.error("Error updating session:", error);
-    alert("Error updating session. Please try again.");
-  } finally {
-    setLoadingAddSession(false);
-  }
-};
 
 
 // -------------------------------------------------------- //
@@ -582,12 +581,12 @@ return (
         filteredSessions.map((session) => (
           <div key={session.id} className="session-card">
             <h3>{session.name}</h3>
-            <p>Location: {session.location}</p>
-            <p>Day and Time: {session.daytime}</p>
-            <p>Added by: {session.username || "Unknown"}</p>
-            <p>Contact: {session.contact}</p>
-            <p>Comments: {session.comment}</p>
-            <p>Recurring: {session.recurring}</p>
+            <p><strong>Location:</strong>  {session.location}</p>
+            <p><strong>Day and Time:</strong> {session.daytime.replace('T', ' ')} {/* Removes the "T" */}</p>
+            <p><strong>Last Updated by:</strong> {session.username || "Unknown"}</p>
+            <p><strong>Contact:</strong> {session.contact}</p>
+            <p><strong>Comments:</strong> {session.comment}</p>
+            <p><strong>Recurring:</strong> {session.recurring}</p>
 
             <button
               className="delete-session-button"
@@ -595,6 +594,15 @@ return (
             >
               🗑️
             </button>
+
+            <button
+              className="update-session-button"
+              onClick={() => handleUpdateSessionClick(session)}
+            >
+              ✏️
+            </button>
+
+
           </div>
         ))
       ) : (

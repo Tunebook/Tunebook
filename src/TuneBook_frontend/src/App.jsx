@@ -16,7 +16,10 @@ import FeedbackForm from './components/Feedback';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Login from './components/Login';
-import LoadingSpinner from './components/LoadingSpinner'; 
+import LoadingSpinner from './components/LoadingSpinner';
+import Marketplace from './components/Marketplace';
+import AboutUs from './components/AboutUs';
+import InstrumentPreview from './components/InstrumentPreview';
 
 const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
 
@@ -39,7 +42,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login state
   const [loading, setLoading] = useState(false);
   const sidebarRef = useRef(null);
-  const refreshInterval = 5 * 60 * 1000;
+  const refreshInterval = 5 * 60 * 100;
 
 
   useEffect(() => {
@@ -131,7 +134,7 @@ function App() {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://identity.ic0.app",
-      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
+      maxTimeToLive: 7 * 24 * 60 * 60 * 1_000_000_000,
       onSuccess: async () => {
         console.log('ICP Login Successful');
         handleLogin(authClient.getIdentity());
@@ -144,7 +147,7 @@ function App() {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://nfid.one/authenticate",
-      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
+      maxTimeToLive: 7 * 24 * 60 * 60 * 1_000_000_000,
       onSuccess: async () => {
         console.log('NFID Login Successful');
         handleLogin(authClient.getIdentity());
@@ -154,27 +157,31 @@ function App() {
   };
 
   const handleSessionsClick = () => {
-    setActiveSession(true);  // Set Sessions active when button is clicked
+    setActiveSession(true);  
     setActiveFriends(false);
     navigate('/sessions'); 
   };
 
   const handleFriendsClick = () => {
-    setActiveFriends(true);  // Set Friends active when button is clicked
+    setActiveFriends(true);  
     setActiveSession(false);
     navigate('/friends'); 
   };  
 
   const handleFeedbackClick = () => {
-    setActiveFriends(false);  // Set Friends active when button is clicked
+    setActiveFriends(false);  
     setActiveSession(false);
     navigate('/feedback'); 
   }; 
 
+  const handleMarketplaceClick = () => {
+    setActiveFriends(false);  
+    setActiveSession(false);
+    navigate('/marketplace'); 
+  };
+
   const handleLogoClick = () => {
-    setActiveSession(false); // Reset Sessions view
-    setActiveFriends(false); // Reset Friends view
-    navigate('/'); // Programmatically navigate to the default page
+    navigate('/'); 
   };
 
     // Handle clicks outside of the sidebar
@@ -210,28 +217,38 @@ function App() {
           <img src="/Tunebook-Name.png" alt="Tunebook Title" className="navbar-title" /> 
         </div>
         <div className="navbar-links">
+          {/*
         <div
             className="navbar-buttons"
             onClick={() => handleFeedbackClick()}
             style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
-             📝 Feedback
+              Feedback
+          </div>
+          */}
+
+          <div
+            className="navbar-buttons"
+            onClick={() => navigate('/marketplace')}
+            style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
+          >
+             Marketplace
           </div>
 
           <div
             className="navbar-buttons"
-            onClick={() => handleSessionsClick()}
+            onClick={() => navigate('/sessions')}
             style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
-           📍 Sessions
+            Sessions
           </div>
 
           <div
             className="navbar-buttons"
-            onClick={() => handleFriendsClick()}
+            onClick={() => navigate('/friends')}
             style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
           >
-            👤 Profile
+             Profile
           </div>
 
           {/* Toggle between Login and Logout buttons based on the isLoggedIn state */}
@@ -266,6 +283,8 @@ function App() {
       {/* Main Content */}
       <div className="main-content">
 
+        
+
         <Routes>
           
         <Route 
@@ -274,6 +293,53 @@ function App() {
               <>
                 <ImageCarousel />
 
+                <div className="mid-app-container" >      
+                  <p style={{ fontSize: '18px', lineHeight: '1.6', justifyContent: 'center', textAlign: 'justify'}}>
+                  Explore a large collection of over <strong>18,000 tunes</strong>! 
+                  Tunebook is a powerful platform for musicians to <strong>create, store, and share</strong> their tunes with the world.
+                  Whether you're looking for inspiration or want to build your own digital library, Tunebook has you covered. 
+                  
+                  Connect with other Celtic musicians and find mutual tunes with them for your sessions. Find the latest sessions happening around your area. 
+                  </p>          
+                  </div>
+
+                  <div className="mid-intro-container"> 
+                      <button
+                        className="intro-links"
+                        onClick={() => navigate('/about-us')} // Navigate to the Tunes page
+                      >
+                         About Tunebook
+                      </button>
+
+                      <button
+                        className="intro-links"
+                        onClick={() => navigate('/tunes')} // Navigate to the Tunes page
+                      >
+                         View all Tunes
+                      </button>
+                    </div>
+
+                  <div className="mid-intro-container"> 
+
+                      <button
+                        className="intro-links"
+                        onClick={() => navigate('/marketplace')} // Navigate to the Marketplace page
+                      >
+                        Visit Marketplace
+                      </button>
+
+
+                      <button
+                        className="intro-links"
+                        onClick={() => navigate('/sessions')} // Navigate to the Sessions page
+                      >
+                         View all Sessions
+                      </button>
+                    </div>
+
+
+
+                {actor ? <InstrumentPreview actor={actor} currentPrincipal={currentAccount} /> : <p>Coming soon.</p>}
 
               
                 {actor ? (
@@ -288,6 +354,7 @@ function App() {
             } 
           />
 
+          
           <Route path="/profile" element={actor ? <Profile actor={actor} currentPrincipal={currentAccount} /> : <p> Profile not available, try refreshing this page.</p>} />
           
           <Route path="/sessions" element={actor ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available, try refreshing this page.</p>} />
@@ -295,11 +362,15 @@ function App() {
           <Route path="/login" element={<Login setAuthClient={setAuthClient} setCurrentAccount={setCurrentAccount} setActor={setActor} setIsLoggedIn={setIsLoggedIn} />} />
         
           <Route path="/tunes" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} /> : <p>Please log in to view tunes.</p>} />
+
+          <Route path="/marketplace" element={actor ? <Marketplace actor={actor} currentPrincipal={currentAccount} /> : <p>Coming soon.</p>} />
+          <Route path="/instrument-preview" element={actor ? <InstrumentPreview actor={actor} currentPrincipal={currentAccount} /> : <p>Coming soon.</p>} />
+          
           <Route path="/faq" element={<FAQ />} />
 
           <Route path="/contact" element={<Contact />} />
           <Route path="/feedback" element={<FeedbackForm />} />
-          
+          <Route path="/about-us" element={<AboutUs />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
 

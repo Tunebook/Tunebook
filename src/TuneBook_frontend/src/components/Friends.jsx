@@ -615,6 +615,8 @@ abc def | gfe dcB | ...`);
       );
     }, [searchTermForFriendTunes, friendTunes]);
 
+
+    /*
     // Update filteredMutualTunes when searchTermForFriendTunes or mutual tunes change
     useEffect(() => {
       setFilteredMutualTunes(
@@ -625,8 +627,25 @@ abc def | gfe dcB | ...`);
         )
       );
     }, [searchTermForFriendTunes, friendTunes, myTunes]);
+    */
 
     
+    // Helper function to extract the base title
+const getBaseTitle = (title) => {
+  return title.split('_')[0].toLowerCase(); // Extract base title before the first underscore and convert to lowercase
+};
+
+// Update filteredMutualTunes when searchTermForFriendTunes or mutual tunes change
+useEffect(() => {
+  setFilteredMutualTunes(
+    friendTunes.filter((friendTune) =>
+      myTunes.some((myTune) => getBaseTitle(myTune.title) === getBaseTitle(friendTune.title)) // Match base titles
+    ).filter((tune) =>
+      tune.title.toLowerCase().includes(searchTermForFriendTunes.toLowerCase()) // Apply search term filter
+    )
+  );
+}, [searchTermForFriendTunes, friendTunes, myTunes]);
+
 
     
     // Function to get mutual tunes
@@ -890,7 +909,7 @@ const fetchFriendRequests = async () => {
                 removeTuneFromTunebook(tune.title); // Call the remove function
               }}
             >
-              Remove
+              Remove Tune
             </button>
 
                   </div>
@@ -906,7 +925,31 @@ const fetchFriendRequests = async () => {
             {/* Tune Details with Tabs */}
               {currentTuneData && (
               <div className="tune-detail-view">
-                <h2 className="tune-titleF">{currentTuneTitle}</h2>
+
+                        {/* Close Button */}
+                        <button
+                      className="close-player-button"
+                      onClick={() => {
+                        setCurrentTuneData(null);
+                        setCurrentTuneTitle("");
+                      }}
+                      style={{
+                        marginLeft: "90%",
+                        background: "white",
+                        color: "black",
+                        border: "none",
+                        borderRadius: "5px",
+                        padding: "8px 12px",
+                        fontSize: "18px",
+                        cursor: "pointer",
+                        boxhadow: "4px 8px #86e3e6"
+                      }}
+                    >
+                      ✖
+                    </button>
+
+
+               {/*   <h2 className="tune-titleF">{currentTuneTitle}</h2> */} 
                 
                 {/* Tab Buttons */}
                 <div className="tab-buttons">
@@ -1001,7 +1044,18 @@ const fetchFriendRequests = async () => {
             placeholder="Search tunes..."
             value={searchTermForFriendTunes}
             onChange={(e) => setSearchTermForFriendTunes(e.target.value)}
-            style={{ width: '95%', height: '15px', padding: '8px', marginTop: '10px', marginBottom: '10px', borderRadius: '8px', border: '3px solid #58d289' }}
+            style={{
+              width: '93%',
+              height: '15px',
+              padding: '8px',
+              marginTop: '10px',
+              marginBottom: '10px',
+              borderRadius: '8px',
+              marginRight: '10px',
+              marginLeft: '9px',
+              paddingRight: '10px',
+              border: '3px solid #58b0d2',
+            }}
           />
 
 

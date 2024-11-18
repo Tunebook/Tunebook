@@ -19,6 +19,7 @@
     "@dfinity/agent": "^2.1.1",
     "@ic-reactor/react": "^1.9.1",
     "abcjs": "^6.4.3",
+    "browser-image-compression": "^2.0.2",
     "leaflet": "^1.9.4",
     "react-modal": "^3.16.1",
     "react-paginate": "^8.2.0",

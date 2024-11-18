@@ -1,5 +1,6 @@
 use ic_cdk;
 use crate::types;
+use crate::types::Instrument;
 use candid::{Decode, Encode};
 use serde_json::Value;
 use std::borrow::Cow;
@@ -23,6 +24,7 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 type ProfileStore = StableBTreeMap<String, types::Profile, Memory>;
 type TuneDB = StableBTreeMap<String, types::Tune, Memory>;
 type SessionDB = StableBTreeMap<u32, types::Session, Memory>;
+type InstrumentStore = StableBTreeMap<u32, Instrument, Memory>;
 
 
 impl Storable for types::Profile {
@@ -71,6 +73,22 @@ impl Storable for types::Session {
     };
 }
 
+impl Storable for types::Instrument {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    const BOUND: ic_stable_structures::storable::Bound = Bound::Bounded {
+        max_size: 2000000, // Adjust size limit based on requirements
+        is_fixed_size: false,
+    };
+}
+
+
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
         MemoryManager::init(DefaultMemoryImpl::default())
@@ -90,6 +108,12 @@ thread_local! {
         RefCell::new(StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(3)))
     ));
+
+    pub static INSTRUMENT_STORE: RefCell<InstrumentStore> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(4)))
+        )
+    );
 }
 
 
@@ -254,39 +278,7 @@ pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tu
             return (res, user_tunes.len() as i32);
     })
 }
-/*
-pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tuneinfo>, i32) {
-    TUNE_STORE.with(|tune_store| {
-        let user_tunes: Vec<types::Tuneinfo> = tune_store
-            .borrow()
-            .iter()
-            .filter(|(_, tune_info)| tune_info.principals.contains(&principal))
-            .map(|(_, tune_info)| {
-                let user_tune = types::Tuneinfo {
-                    title: tune_info.title.clone(),
-                    tune_data: tune_info.tune_data.clone(),
-                    username: tune_info.username.clone(), // Map username from Tune to Tuneinfo
-                };
-                user_tune
-            })
-            .collect();
 
-        if page_number == -1 {
-            return (user_tunes.clone(), user_tunes.len() as i32);
-        }
-
-        let res = user_tunes
-            .iter()
-            .skip(page_number as usize * 8)
-            .enumerate()
-            .filter(|(index, _)| *index < 8)
-            .map(|(_, tune_info)| tune_info.clone())
-            .collect();
-
-        (res, user_tunes.len() as i32)
-    })
-}
-*/
 
 pub fn get_user_tune(principal: String, title: String) -> String {
     TUNE_STORE.with(|tune_store| {
@@ -344,7 +336,7 @@ pub fn remove_tune(principal: String, title: String) -> bool {
         let mut store = tune_store.borrow_mut();
         
         if let Some(tune) = store.get(&title) {
-            // Check if the user has this tune in their tunebook
+            // Check if the user has this tune in theirx tunebook
             if tune.principals.contains(&principal) {
                 let mut updated_principals = tune.principals.clone();
                 updated_principals.retain(|p| p != &principal); // Remove user's principal from the list
@@ -561,74 +553,6 @@ pub async fn cancel_friend_request(sender: String, receiver: String) -> bool {
     })
 }
 
-/*
-pub fn filter_tunes(
-    sub_title: &str,
-    rithm: &str,
-    key: &str,
-    batch_start_index: i32,
-    batch_size: i32,
-) -> (Vec<types::Tuneinfo>, i32) {
-    TUNE_STORE.with(|tune_store| {
-        let binding = tune_store.borrow();
-        let total_count: i32 = binding.len().try_into().unwrap_or(0);
-
-        // Prepare regexes for rhythm and key matching only if they are not set to "all"
-        let rhythm_regex = if rithm != "all" {
-            Some(Regex::new(&format!(r"(?m)^R:\s*{}", rithm)).unwrap())
-        } else {
-            None
-        };
-
-        let key_regex = if key != "all" {
-            Some(Regex::new(&format!(r"(?m)^K:\s*{}", key)).unwrap())
-        } else {
-            None
-        };
-
-        // Convert batch parameters to `usize` for indexing
-        let start_index = batch_start_index;
-        let size = batch_size;
-
-        // Paginate first, and filter only the current batch
-        let tunes: Vec<types::Tuneinfo> = binding
-            .iter()
-            .skip(start_index)  // Start from the specified batch index
-            .take(size)          // Limit to the batch size
-            .filter(|(_, tune_info)| {
-                // Title filter
-                let title_match = tune_info.title.to_lowercase().contains(&sub_title.to_lowercase());
-                
-                // Rhythm filter
-                let rhythm_match = if let Some(ref regex) = rhythm_regex {
-                    regex.is_match(&tune_info.tune_data)
-                } else {
-                    true
-                };
-
-                // Key filter
-                let key_match = if let Some(ref regex) = key_regex {
-                    regex.is_match(&tune_info.tune_data)
-                } else {
-                    true
-                };
-
-                // Apply all filters
-                title_match && rhythm_match && key_match
-            })
-            .map(|(_, tune_info)| types::Tuneinfo {
-                title: tune_info.title.clone(),
-                tune_data: tune_info.tune_data.clone(),
-            })
-            .collect();
-
-        // Return filtered tunes and the total count of all tunes in the store for pagination purposes
-        (tunes, total_count)
-    })
-}
-
-*/
-
 
 pub fn filter_tunes(
     sub_title: &str,
@@ -713,73 +637,6 @@ pub fn filter_tunes(
     })
 }
 
-
-
-/*
-pub fn filter_tunes(
-    sub_title: &str,
-    rithm: &str,
-    key: &str,
-    page_num: i32,
-) -> (Vec<types::Tuneinfo>, i32) {
-    TUNE_STORE.with(|tune_store| {
-        let binding = tune_store.borrow();
-        let res: Vec<types::Tuneinfo> = binding
-            .iter()
-            .filter(|(title, tune_info)| {
-                let regex_rythm = Regex::new(&format!(r"R:\s*{}", rithm)).unwrap();
-                let regex_key = Regex::new(&format!(r"K:\s*{}", key)).unwrap();
-                title.to_lowercase().contains(&sub_title.to_lowercase())
-                    && (rithm == "all" || regex_rythm.is_match(&tune_info.tune_data.clone()))
-                    && (key == "all" || regex_key.is_match(&tune_info.tune_data.clone()))
-            })
-            .map(|(title, tune_info)| {
-                let tune = types::Tuneinfo {
-                    title: title.clone(),
-                    tune_data: tune_info.tune_data.clone(),
-                };
-                tune
-            })
-            .collect();
-
-        let result: Vec<types::Tuneinfo> = res
-            .iter()
-            .skip(page_num as usize * 15 as usize)
-            .enumerate()
-            .filter(|(index, _)| index.clone() < 15 as usize)
-            .map(|(_, tune)| tune.clone())
-            .collect();
-        (result, res.len() as i32)
-    })
-}
-    */
-
-
-/*
-pub fn filter_tunes(
-    sub_title: &str,
-    rithm: &str,
-    key: &str,
-    page_num: i32,
-) -> (Vec<types::Tuneinfo>, i32) {
-    TUNE_STORE.with(|tune_store| {
-        let tunes: Vec<types::Tuneinfo> = tune_store
-            .borrow()
-            .iter()
-            .skip(page_num as usize * 15)
-            .take(15)
-            .map(|(_, tune_info)| types::Tuneinfo {
-                title: tune_info.title.clone(),
-                tune_data: tune_info.tune_data.clone(),
-            })
-            .collect();
-
-        let total_count = tune_store.borrow().len() as i32;
-        (tunes, total_count)
-    })
-}
-
-*/
 
     pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
         PROFILE_STORE.with(|profile_store| {
@@ -906,60 +763,46 @@ pub fn add_session(principal: String, username: String, name: String, location: 
     })
 }
 
-/*
-pub fn update_session(id: u32, principal: String, username: String, name: String, location: String, daytime: String, contact: String, recurring: String, comment: String) -> bool {
+pub fn update_session(
+    id: u32,
+    principal: String,
+    username: String,
+    name: String,
+    location: String,
+    daytime: String,
+    contact: String,
+    comment: String,
+    recurring: String,
+) -> bool {
     SESSION_STORE.with(|session_store| {
-        if session_store.borrow().get(&id).is_none() {
-            return false;
-        }
+        let mut store = session_store.borrow_mut();
 
-        let mut updated_session = session_store.borrow().get(&id).unwrap().clone();
-        if updated_session.principal != principal {
-            return false;
-        }
+        // Check if the session exists and if the requesting principal owns the session
+        if let Some(session) = store.get(&id) {
+                // Update the session with new details, preserving the session ID and principal
+                let updated_session = types::Session {
+                    id,
+                    principal,
+                    username,
+                    name,
+                    location,
+                    daytime,
+                    contact,
+                    comment,
+                    recurring,
+                };
 
-        // update_session.id = id;
-        updated_session.principal = principal;
-        updated_session.username = username;
-        updated_session.name = name;
-        updated_session.location = location;
-        updated_session.daytime = daytime;
-        updated_session.contact = contact;
-        updated_session.comment = comment;
-        updated_session.recurring = recurring;
-        session_store.borrow_mut().insert(id, updated_session);
-        true
+                // Insert the updated session back into the store
+                store.insert(id, updated_session);
+                return true; // Update successful
+        
+        } else {
+            ic_cdk::println!("Session with ID {} not found", id);
+            return false; // Session not found
+        }
     })
 }
-    */
-
-    pub fn update_session(id: u32, principal: String, username: String, name: String, location: String, daytime: String, contact: String, comment: String, recurring: String) -> bool {
-        SESSION_STORE.with(|session_store| {
-
-            if session_store.borrow().get(&id).is_none() {
-                return false;
-            }
-
-            let mut sessions = session_store.borrow().get(&id).unwrap().clone();
-            let mut updated_session = session_store.borrow().get(&id).unwrap().clone();
-            
-
-                // Ensure the principal matches before allowing updates
-                    sessions.principal = principal;
-                    sessions.username = username;
-                    sessions.name = name;
-                    sessions.location = location;
-                    sessions.daytime = daytime;
-                    sessions.contact = contact;
-                    sessions.comment = comment;
-                    sessions.recurring = recurring;
     
-                    // Reinsert the updated session back into the store
-                    session_store.borrow_mut().insert(id, updated_session);
-                    true // Successfully updated
-        
-    })
-    }
 
 
 pub fn delete_session(id: u32, principal: String) -> bool {
@@ -982,6 +825,80 @@ pub fn delete_session(id: u32, principal: String) -> bool {
     })
 }
 
+pub fn get_instruments(sub_name: &str, page_num: i32) -> (Vec<types::Instrument>, i32) {
+    INSTRUMENT_STORE.with(|instrument_store| {
+        let res: Vec<types::Instrument> = instrument_store
+            .borrow()
+            .iter()
+            .filter(|(_, instrument)| 
+                instrument.name.to_lowercase().contains(&sub_name.to_lowercase()) ||
+                instrument.location.to_lowercase().contains(&sub_name.to_lowercase())
+            )
+            .map(|(_, instrument)| instrument.clone())
+            .collect();
+
+        let result: Vec<types::Instrument> = res
+            .iter()
+            .skip(page_num as usize * 15) // Pagination logic: Skip previous pages
+            .enumerate()
+            .filter(|(index, _)| index.clone() < 15) // Limit to 15 instruments per page
+            .map(|(_, instrument)| instrument.clone())
+            .collect();
+
+        (result, res.len() as i32) // Return the paginated list and total count
+    })
+}
+
+pub fn add_instrument(
+    seller_principal: String,
+    buyer_principal: String,
+    username: String,
+    name: String,
+    location: String,
+    product: String,
+    comment: String,
+    price: String,
+    photos: Vec<Vec<u8>>,
+) -> bool {
+    ic_cdk::println!("Adding instrument: seller_principal: {}, username: {}, name: {}", seller_principal, username, name);
+
+    INSTRUMENT_STORE.with(|instrument_store| {
+        let new_instrument = types::Instrument {
+            id: ic_cdk::api::time() as u32, 
+            seller_principal,
+            buyer_principal, 
+            username,
+            name,
+            location,
+            product,
+            comment,
+            price,
+            photos,
+        };
+
+        instrument_store.borrow_mut().insert(new_instrument.id.clone(), new_instrument);
+        true
+    })
+}
+
+pub fn delete_instrument(id: u32, seller_principal: String) -> bool {
+    INSTRUMENT_STORE.with(|instrument_store| {
+        let mut store = instrument_store.borrow_mut();
+
+        if let Some(instrument) = store.get(&id) {
+            if instrument.seller_principal == seller_principal {
+                store.remove(&id); // Remove the instrument if the seller matches
+                return true;
+            } else {
+                ic_cdk::println!("Unauthorized delete attempt by {}", seller_principal);
+                return false;
+            }
+        } else {
+            ic_cdk::println!("Instrument with ID {} not found", id);
+            return false;
+        }
+    })
+}
 
 
 pub fn get_profile_count() -> u64 {

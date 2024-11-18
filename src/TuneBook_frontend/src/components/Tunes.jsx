@@ -308,15 +308,6 @@ abc def | gfe dcB | ...`);
 
     
 
-    <div className="mid-app-container" >      
-    <p style={{ fontSize: '18px', lineHeight: '1.6', justifyContent: 'center', textAlign: 'justify'}}>
-                  Explore a large collection of over <strong>18,000 tunes</strong>! 
-                  Tunebook is a powerful platform for musicians to <strong>create, store, and share</strong> their tunes with the world.
-                  Whether you're looking for inspiration or want to build your own digital library, Tunebook has you covered. 
-                  
-                  Connect with other Celtic musicians and find mutual tunes with them for your sessions. Find the latest sessions happening around your area. 
-    </p>          
-    </div>
 
     <div className="mid-container" >
 
@@ -467,78 +458,100 @@ abc def | gfe dcB | ...`);
             </Modal>
 
 
-            {/* Tune Details with Tabs */}
-            {currentTuneData && (
-              <div className="tune-detail-view">
-                <h2> </h2>
-                
-                {/* Tab Buttons */}
-                <div className="tab-buttons">
-                  <button 
-                    className={selectedTab === "abc" ? "active" : ""} 
-                    onClick={() => setSelectedTab("abc")}
-                  >
-                    ABC
-                  </button>
-                  <button 
-                    className={selectedTab === "sheet" ? "active" : ""} 
-                    onClick={() => setSelectedTab("sheet")}
-                  >
-                    Sheet Music
-                  </button>
-                </div>
+{/* Tune Details with Tabs */}
+{currentTuneData && (
+  <div className="tune-detail-view">
 
-                {/* ABC Notation */}
-                {selectedTab === "abc" && (
-                  <div className="abc-container">
-                    <pre>{abcNotation}</pre>
-                    
-                    <button
-                    className="download-btn"
-                    onClick={() => {
-                      const blob = new Blob([abcNotation], { type: "text/plain" });
-                      const link = document.createElement("a");
-                      link.href = URL.createObjectURL(blob);
-                      link.download = `${currentTuneTitle || "abc_tune"}`; // Default filename
-                      document.body.appendChild(link); // Append link to the document body
-                      link.click(); // Programmatically click the link to trigger the download
-                      document.body.removeChild(link); // Clean up by removing the link element
-                    }}
-                  >
-                    Download
-                  </button>
+        {/* Close Button */}
+        <button
+      className="close-player-button"
+      onClick={() => {
+        setCurrentTuneData(null);
+        setCurrentTuneTitle("");
+      }}
+      style={{
+        position: "relative",
+        bottom: "100%",
+        left: "95%",
+        background: "white",
+        color: "black",
+        border: "none",
+        borderRadius: "5px",
+        padding: "8px 12px",
+        fontSize: "18px",
+        cursor: "pointer",
+        boxhadow: "4px 8px #86e3e6"
+      }}
+    >
+       ✖
+    </button>
 
-                  <button 
-                    className="copy-btn" 
-                    onClick={() => {
-                      navigator.clipboard.writeText(abcNotation)
-                        .then(() => {
-                          alert("Copied to clipboard!"); // Show success message
-                        })
-                        .catch(() => {
-                          alert("Failed to copy!"); // Show error message if copying fails
-                        });
-                    }}
-                  >
-                    Copy ABC
-                  </button>
+    {/* <h2> {currentTuneTitle}</h2> */}
 
 
-                  </div>
-                )}
+    {/* Tab Buttons */}
+    <div className="tab-buttons">
+      <button
+        className={selectedTab === "abc" ? "active" : ""}
+        onClick={() => setSelectedTab("abc")}
+      >
+        ABC
+      </button>
+      <button
+        className={selectedTab === "sheet" ? "active" : ""}
+        onClick={() => setSelectedTab("sheet")}
+      >
+        Sheet Music
+      </button>
+    </div>
 
-                {/* Sheet Music */}
-                {selectedTab === "sheet" && (
-                  <div id="tunedata" className="abc-notation"></div>
-                )}
-                
-                <div id="player" className="abc-player"></div>
-                
-              </div>
+    {/* ABC Notation */}
+    {selectedTab === "abc" && (
+      <div className="abc-container">
+        <pre>{abcNotation}</pre>
 
+        <button
+          className="download-btn"
+          onClick={() => {
+            const blob = new Blob([abcNotation], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${currentTuneTitle || "abc_tune"}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+        >
+          Download
+        </button>
 
-              
-            )}
+        <button
+          className="copy-btn"
+          onClick={() => {
+            navigator.clipboard
+              .writeText(abcNotation)
+              .then(() => {
+                alert("Copied to clipboard!");
+              })
+              .catch(() => {
+                alert("Failed to copy!");
+              });
+          }}
+        >
+          Copy ABC
+        </button>
+      </div>
+    )}
+
+    {/* Sheet Music */}
+    {selectedTab === "sheet" && (
+      <div id="tunedata" className="abc-notation"></div>
+    )}
+
+    <div id="player" className="abc-player"></div>
+  </div>
+)}
+
 
       <div className="tune-list">
         {orgTunes.length > 0 ? (
@@ -585,17 +598,23 @@ abc def | gfe dcB | ...`);
         {libraryTunes.map((library, index) => (
           <div
             key={index}
-            className="tune-card library-card"
-            onClick={() => setCurrentLibrary(currentLibrary === library ? null : library)}
+            className="tune-card"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentLibrary(currentLibrary === library ? null : library);
+            }}
           >
             <div className="tune-details">
               <p className="tune-title">{`📚 ${library.baseTitle} Tune Library`}</p>
               <button
-                className="add-tune-button"
-                onClick={() => setCurrentLibrary(currentLibrary === library ? null : library)}
-              >
-                {currentLibrary === library ? "📚 Collapse" : "📚 Expand"}
-              </button>
+        className="add-tune-button"
+        onClick={(e) => {
+          e.stopPropagation(); 
+          setCurrentLibrary(currentLibrary === library ? null : library);
+        }}
+      >
+        {currentLibrary === library ? "📚 Collapse" : "📚 Expand"}
+      </button>
             </div>
           </div>
         ))}
@@ -633,7 +652,11 @@ abc def | gfe dcB | ...`);
                 
                 <button
                   className="add-tune-button"
-                  onClick={() => handleAddTune(tune)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddTune(tune);
+                  
+                  }}
                   disabled={userTunes.includes(tune.title)}
                 >
                   {userTunes.includes(tune.title) ? "Added!" : "+ Add to My Tunebook"}

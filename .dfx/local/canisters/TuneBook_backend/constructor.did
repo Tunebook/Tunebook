@@ -1,4 +1,16 @@
 type Friend = record { "principal" : text; username : text; avatar : blob };
+type Instrument = record {
+  id : nat32;
+  username : text;
+  name : text;
+  comment : text;
+  seller_principal : text;
+  buyer_principal : text;
+  price : text;
+  location : text;
+  product : text;
+  photos : vec blob;
+};
 type Profile = record {
   bio : opt text;
   pob : text;
@@ -32,14 +44,27 @@ type Tune = record {
 type Tuneinfo = record { title : text; username : opt text; tune_data : text };
 service : (nat64) -> {
   accept_friend_request : (text, text) -> (bool);
+  add_instrument : (
+      text,
+      text,
+      text,
+      text,
+      text,
+      text,
+      text,
+      text,
+      vec blob,
+    ) -> (bool);
   add_session : (text, text, text, text, text, text, text, text) -> (bool);
   add_tune : (text, text, text, bool, text) -> (bool);
   authentication : (text) -> (opt Profile) query;
   browse_people : (text, text, int32) -> (vec Friend, int32) query;
   cancel_friend_request : (text, text) -> (bool);
+  delete_instrument : (nat32, text) -> (bool);
   delete_session : (nat32, text) -> (bool);
   filter_tunes : (text, text, text, int32) -> (vec Tuneinfo, int32) query;
   get_friends : (text) -> (vec Friend) query;
+  get_instruments : (text, int32) -> (vec Instrument, int32) query;
   get_new_tunes_from_friends : (text) -> (vec Tune) query;
   get_original_tune : (text) -> (text) query;
   get_original_tune_list : (int32) -> (vec text, int32) query;

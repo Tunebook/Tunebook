@@ -61,7 +61,7 @@ function Login({ setAuthClient, setCurrentAccount, setActor, setIsLoggedIn }) {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://identity.ic0.app",
-      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
+      maxTimeToLive: 7 * 24 * 60 * 60 * 1_000_000_000,
       onSuccess: () => handleLogin(authClient.getIdentity()),
     });
   };
@@ -70,7 +70,7 @@ function Login({ setAuthClient, setCurrentAccount, setActor, setIsLoggedIn }) {
     if (!authClient) return;
     await authClient.login({
       identityProvider: "https://nfid.one/authenticate",
-      maxTimeToLive: 30 * 24 * 3_600_000_000_000,
+      maxTimeToLive: 7 * 24 * 60 * 60 * 1_000_000_000,
       onSuccess: () => handleLogin(authClient.getIdentity()),
     });
   };
@@ -85,7 +85,7 @@ function Login({ setAuthClient, setCurrentAccount, setActor, setIsLoggedIn }) {
       <div className="login-options">
       {/* IC Identity Login Button */}
       <button className="login-button" onClick={loginICP}>
-        <span>IC Identity</span>
+        <span>Internet Identity</span>
         <img src="/images/icp-logo.png" alt="IC Identity Logo" className="login-icon" />
       </button>
 

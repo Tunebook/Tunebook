@@ -50,3 +50,17 @@ pub struct Tuneinfo {
     pub username: Option<String>,
 }
     
+#[derive(CandidType, Clone, Deserialize, Debug)]
+pub struct Instrument {
+    pub id: u32,
+    pub seller_principal: String,
+    pub buyer_principal: String,
+    pub username: String,
+    pub name: String,
+    pub location: String,
+    //pub contact: String,
+    pub product: String,
+    pub comment: String,
+    pub price: String,
+    pub photos: Vec<Vec<u8>>,
+}
