@@ -42,7 +42,6 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login state
   const [loading, setLoading] = useState(false);
   const sidebarRef = useRef(null);
-  const refreshInterval = 5 * 60 * 100;
 
 
   useEffect(() => {
@@ -65,21 +64,6 @@ function App() {
   }, []);
 
 
-  useEffect(() => {
-    // Set up periodic session refresh
-    const refreshSession = async () => {
-      if (authClient && (await authClient.isAuthenticated())) {
-        const identity = authClient.getIdentity();
-        handleLogin(identity); // Refresh the session by re-authenticating
-      }
-    };
-    
-    // Set interval for session refresh
-    const intervalId = setInterval(refreshSession, refreshInterval);
-    
-    // Clean up the interval on component unmount
-    return () => clearInterval(intervalId);
-  }, [authClient]);
   
 
   useEffect(() => {
@@ -156,29 +140,6 @@ function App() {
     });
   };
 
-  const handleSessionsClick = () => {
-    setActiveSession(true);  
-    setActiveFriends(false);
-    navigate('/sessions'); 
-  };
-
-  const handleFriendsClick = () => {
-    setActiveFriends(true);  
-    setActiveSession(false);
-    navigate('/friends'); 
-  };  
-
-  const handleFeedbackClick = () => {
-    setActiveFriends(false);  
-    setActiveSession(false);
-    navigate('/feedback'); 
-  }; 
-
-  const handleMarketplaceClick = () => {
-    setActiveFriends(false);  
-    setActiveSession(false);
-    navigate('/marketplace'); 
-  };
 
   const handleLogoClick = () => {
     navigate('/'); 
@@ -269,6 +230,29 @@ function App() {
 
           {/* Use the LoginOptions component for logins */}
           {<LoginOptions onLoginICP={loginICP} onLoginNFID={loginNFID} />}
+
+          <ul
+          style={{
+            paddingLeft: "20px",
+            textAlign: "left",
+            color: "white",
+            lineHeight: "1.8",
+            fontSize: "16px",
+            marginBottom: "20px",
+            marginTop: "50px"
+          }}
+        >
+          <li>
+            <strong style={{ color: "#86e3e6" }}>Internet Identity:</strong> A simple,
+            secure login method designed for the apps of tomorrow.
+          </li>
+          <li>
+            <strong style={{ color: "#86e3e6" }}>NFID:</strong> Login with your email or
+            Google account, making it just as familiar and easy as other apps you
+            use daily.
+          </li>
+        </ul>
+          
 
           <h3 className="terms-text">
             By Connecting, you agree to have read and understood and accept the{" "}

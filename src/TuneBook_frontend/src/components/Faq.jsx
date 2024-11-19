@@ -7,10 +7,10 @@ function FAQ() {
       <h1>FAQ</h1>
       
       <div className="faq-item">
-        <h3> - What is TuneBook?</h3>
+        <h3> - What is Tunebook?</h3>
         <p>
-          TuneBook is a decentralized platform for musicians and music enthusiasts to create, manage, and share musical sessions with a community of like-minded individuals. 
-          Built on the Internet Computer, TuneBook provides a secure, scalable, and serverless backend for all its features.
+          Tunebook is a decentralized platform for musicians and music enthusiasts to create, manage, and share musical sessions with a community of like-minded individuals. 
+          Built on the Internet Computer, Tunebook provides a secure, scalable, and serverless backend for all its features.
         </p>
       </div>
       
@@ -23,17 +23,17 @@ function FAQ() {
       </div>
       
       <div className="faq-item">
-        <h3> - Is there a fee to use TuneBook?</h3>
+        <h3> - Is there a fee to use Tunebook?</h3>
         <p>
-          TuneBook is free to use. There are no fees to create, browse, or join sessions. However, you may be responsible for any local event or venue fees associated 
+          Tunebook is free to use. There are no fees to create, browse, or join sessions. However, you may be responsible for any local event or venue fees associated 
           with the sessions you attend.
         </p>
       </div>
       
       <div className="faq-item">
-        <h3> - How is my data protected on TuneBook?</h3>
+        <h3> - How is my data protected on Tunebook?</h3>
         <p>
-          TuneBook leverages the security of the Internet Computer, which uses Rust-based canisters to securely store and manage data. User authentication is handled by 
+          Tunebook leverages the security of the Internet Computer, which uses Rust-based canisters to securely store and manage data. User authentication is handled by 
           the Internet Computer’s identity service, providing privacy and security for all users.
         </p>
       </div>
@@ -41,7 +41,7 @@ function FAQ() {
       <div className="faq-item">
         <h3> - How can I find sessions near me?</h3>
         <p>
-          TuneBook features an interactive map powered by Leaflet.js. You can use this map to view and search for musical sessions near your location, making it easy 
+          Tunebook features an interactive map powered by Leaflet.js. You can use this map to view and search for musical sessions near your location, making it easy 
           to connect with local musicians.
         </p>
       </div>
@@ -55,9 +55,9 @@ function FAQ() {
       </div>
 
       <div className="faq-item">
-        <h3> - Who are the team members behind TuneBook?</h3>
+        <h3> - Who are the team members behind Tunebook?</h3>
         <p>
-          TuneBook is founded by Robert Ripley and developed by founding engineer Gurleen K Dhaliwal.
+          Tunebook is founded by Robert Ripley and developed by founding engineer Gurleen K Dhaliwal.
         </p>
       </div>
 
@@ -72,7 +72,7 @@ function FAQ() {
       <div className="faq-item">
         <h3> - Can I filter sessions by location or type?</h3>
         <p>
-          Yes, TuneBook provides various filters to help you narrow down sessions based on location, event name, or other parameters. This makes it easy to find exactly 
+          Yes, Tunebook provides various filters to help you narrow down sessions based on location, event name, or other parameters. This makes it easy to find exactly 
           what you’re looking for.
         </p>
       </div>
