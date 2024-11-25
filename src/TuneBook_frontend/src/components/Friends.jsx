@@ -877,7 +877,7 @@ const fetchFriendRequests = async () => {
         <div className="tune-listF">
           {filteredTunes.length > 0 ? (
             filteredTunes.map((tune, index) => {
-              const [_, username] = tune.title.split("_+TBusername+:_"); 
+              const [_, username] = tune.title; 
               return (
                 <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
                   <div className="tune-detailsF">
@@ -1079,8 +1079,9 @@ const fetchFriendRequests = async () => {
         <div className="tune-listF">
           {tunesToDisplay.length > 0 ? (
             tunesToDisplay.map((tune, index) => (
-              <div key={index} className="tune-cardF" onClick={() => onSelectTune(tune)}>
+              <div key={index} className="tune-cardSF" onClick={() => onSelectTune(tune)}>
                 <div className="tune-detailsF">
+
                   <h3 className="tune-titleF">
                     <span className="play-icon-circleF">
                       <svg
@@ -1094,9 +1095,11 @@ const fetchFriendRequests = async () => {
                     </span>
                     {cleanTitle(tune.title.split("_")[0])}
                   </h3>
+
                   <p className="tune-idF">
                   Added by: {tune.username && String(tune.username).trim() !== "" ? tune.username : "Tunebook"}
                   </p>
+
                 </div>
               </div>
             ))
@@ -1106,14 +1109,33 @@ const fetchFriendRequests = async () => {
         </div>
 
 
-
-
         </div>
 
             {/* Tune Details with Tabs */}
             {currentTuneData && (
               <div className="tune-detail-view">
-                <h2 className="tune-titleF">{currentTuneTitle}</h2>
+               {/* <h2 className="tune-titleF">{currentTuneTitle}</h2> */}
+
+                <button
+                      className="close-player-button"
+                      onClick={() => {
+                        setCurrentTuneData(null);
+                        setCurrentTuneTitle("");
+                      }}
+                      style={{
+                        marginLeft: "90%",
+                        background: "white",
+                        color: "black",
+                        border: "none",
+                        borderRadius: "5px",
+                        padding: "8px 12px",
+                        fontSize: "18px",
+                        cursor: "pointer",
+                        boxhadow: "4px 8px #86e3e6"
+                      }}
+                    >
+                      ✖
+                    </button>
                 
                 {/* Tab Buttons */}
                 <div className="tab-buttons">

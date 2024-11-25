@@ -20,13 +20,20 @@ import LoadingSpinner from './components/LoadingSpinner';
 import Marketplace from './components/Marketplace';
 import AboutUs from './components/AboutUs';
 import InstrumentPreview from './components/InstrumentPreview';
+import Forums from './components/Forums';
 
 const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
+
+
+const isProduction = window.location.hostname === "tunebook.io";
+const host = isProduction ? "https://ic0.app"  : undefined;
+
 
 // Initialize actor without authentication
 const initActor = (identity) => {
   const agentOptions = identity ? { identity } : {};
-  const agent = new HttpAgent({ ...agentOptions, host: "https://ic0.app" });  // Mainnet host
+  //const agent = new HttpAgent({ ...agentOptions, host: "https://ic0.app" });  // Mainnet host
+  const agent = new HttpAgent({ ...agentOptions, host });  // Mainnet host
   return Actor.createActor(idlFactory, { agent, canisterId });
 };
 
@@ -43,103 +50,128 @@ function App() {
   const [loading, setLoading] = useState(false);
   const sidebarRef = useRef(null);
 
-
-  useEffect(() => {
-    const initAuthClient = async () => {
-      setLoading(true); 
-      const auth = await AuthClient.create();
-      setAuthClient(auth);  // Store the AuthClient instance
-    
-      if (await auth.isAuthenticated()) {
-        console.log('User is already authenticated');
-        handleLogin(auth.getIdentity());
-        setLoading(false);
-      } else {
-        console.log('User is not authenticated');
-        setLoading(false);
-      }
-    };
-  
-    initAuthClient();
-  }, []);
-
-
-  
-
   useEffect(() => {
     const actorInstance = initActor();  
     setActor(actorInstance);  
   }, []);
+
+// Initialize AuthClient
+useEffect(() => {
+  const initAuthClient = async () => {
+    const client = await AuthClient.create({
+      idleOptions: {
+        idleTimeout: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+        disableDefaultIdleCallback: true, // Prevent auto logout on idle
+      },
+    });
+    setAuthClient(client);
+
+    // Restore session if user is already authenticated
+    if (await client.isAuthenticated()) {
+      console.log("Restoring session...");
+      const identity = client.getIdentity();
+      handleLogin(identity);
+    }
+  };
+
+  initAuthClient();
+}, []);
 
 
 
   // Authenticate user and fetch profile
   const handleLogin = async (identity) => {
     try {
-      if (!identity) {
-        console.error('Identity is undefined. Unable to authenticate.');
-        return;
-      }
-
-      const actorInstance = initActor(identity);  // Initialize actor with identity
+      const actorInstance = initActor(identity);
       setActor(actorInstance);
 
-      const principal = identity.getPrincipal().toString();  // User's principal
+      const principal = identity.getPrincipal().toString();
       setCurrentAccount(principal);
-      setIsLoggedIn(true); // Set login state to true
-      console.log('User logged in with principal:', principal);
+      setIsLoggedIn(true);
+
+      console.log("Logged in as:", principal);
 
       // Fetch user profile
       const userProfile = await actorInstance.authentication(principal);
       if (userProfile && Object.keys(userProfile).length > 0) {
         setProfile(userProfile);
-        console.log('Profile fetched:', userProfile);
       } else {
-        console.log('No profile found. Redirecting to profile creation...');
-        navigate('/profile');  // Navigate to profile creation page if no profile is found
+        console.log("Redirecting to profile creation...");
+        navigate('/profile');
       }
     } catch (error) {
-      console.error('Authentication failed:', error);
+      console.error("Error during login:", error);
     }
   };
 
-  // Handle Logout
-  const handleLogout = async () => {
-    if (!authClient) return;
-
+ // Logout and reset state
+ const handleLogout = async () => {
+  if (authClient) {
     await authClient.logout();
-    setCurrentAccount(null);  // Reset user account
-    setIsLoggedIn(false);     // Set login state to false
-    setActor(initActor());    // Re-initialize actor without identity
-    console.log('User has been logged out');
-  };
+    setCurrentAccount(null);
+    setIsLoggedIn(false);
+    setActor(initActor());
+    console.log("User logged out");
+  }
+};
 
-  const loginICP = async () => {
-    if (!authClient) return;
+// Renew session periodically
+useEffect(() => {
+  const renewSession = async () => {
+    if (authClient && await authClient.isAuthenticated()) {
+      console.log("Renewing session...");
+      await authClient.login({
+        identityProvider: "https://identity.ic0.app",
+        maxTimeToLive: BigInt(7 * 24 * 60 * 60 * 1_000_000_000), // 7 days
+        onSuccess: () => console.log("Session renewed"),
+      });
+    }
+  };
+  
+  const interval = setInterval(renewSession, 6 * 60 * 60 * 1000); // Every 6 hours
+  return () => clearInterval(interval);
+}, [authClient]);
+
+// Login with Internet Identity
+const loginICP = async () => {
+  if (authClient) {
     await authClient.login({
       identityProvider: "https://identity.ic0.app",
-      maxTimeToLive: 7 * 24 * 60 * 60 * 1_000_000_000,
-      onSuccess: async () => {
-        console.log('ICP Login Successful');
+      maxTimeToLive: BigInt(7 * 24 * 60 * 60 * 1_000_000_000), // 7 days
+      onSuccess: () => {
+        console.log("ICP Login Successful");
         handleLogin(authClient.getIdentity());
-        setSidebarOpen(false);  // Close sidebar after login
+        setSidebarOpen(false);
       },
     });
-  };
+  }
+};
 
-  const loginNFID = async () => {
-    if (!authClient) return;
+// Login with NFID
+const loginNFID = async () => {
+  if (authClient) {
+    const APP_NAME = "Tunebook"; // Replace with your app name
+    const APP_LOGO = "https://nfid.one/icons/favicon-96x96.png"; // Replace with your logo URL
+    const identityProvider = `https://nfid.one/authenticate?applicationName=${APP_NAME}&applicationLogo=${APP_LOGO}`;
+
     await authClient.login({
-      identityProvider: "https://nfid.one/authenticate",
-      maxTimeToLive: 7 * 24 * 60 * 60 * 1_000_000_000,
-      onSuccess: async () => {
-        console.log('NFID Login Successful');
+      identityProvider,
+      maxTimeToLive: BigInt(7 * 24 * 60 * 60 * 1_000_000_000), // 7 days
+      onSuccess: () => {
+        console.log("NFID Login Successful");
         handleLogin(authClient.getIdentity());
-        setSidebarOpen(false);  // Close sidebar after login
+        setSidebarOpen(false);
       },
+      windowOpenerFeatures: `
+        left=${window.screen.width / 2 - 525 / 2},
+        top=${window.screen.height / 2 - 705 / 2},
+        toolbar=0,location=0,menubar=0,width=525,height=705
+      `,
     });
-  };
+  }
+};
 
+  
 
   const handleLogoClick = () => {
     navigate('/'); 
@@ -178,15 +210,8 @@ function App() {
           <img src="/Tunebook-Name.png" alt="Tunebook Title" className="navbar-title" /> 
         </div>
         <div className="navbar-links">
-          {/*
-        <div
-            className="navbar-buttons"
-            onClick={() => handleFeedbackClick()}
-            style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
-          >
-              Feedback
-          </div>
-          */}
+        
+        
 
           <div
             className="navbar-buttons"
@@ -195,6 +220,15 @@ function App() {
           >
              Marketplace
           </div>
+
+          <div
+            className="navbar-buttons"
+            onClick={() => navigate('/forums')}
+            style={{ cursor: 'pointer', opacity: actor ? 1 : 0.5 }}
+          >
+              Forums
+          </div>
+
 
           <div
             className="navbar-buttons"
@@ -279,7 +313,7 @@ function App() {
 
                 <div className="mid-app-container" >      
                   <p style={{ fontSize: '18px', lineHeight: '1.6', justifyContent: 'center', textAlign: 'justify'}}>
-                  Explore a large collection of over <strong>18,000 tunes</strong>! 
+                  Explore a large collection of over <strong>4,200 tunes</strong>! 
                   Tunebook is a powerful platform for musicians to <strong>create, store, and share</strong> their tunes with the world.
                   Whether you're looking for inspiration or want to build your own digital library, Tunebook has you covered. 
                   
@@ -344,6 +378,7 @@ function App() {
           <Route path="/sessions" element={actor ? <Sessions actor={actor} currentPrincipal={currentAccount}/> : <p>Sessions not available, try refreshing this page.</p>} />
           <Route path="/friends" element={actor ? <Friends actor={actor} currentPrincipal={currentAccount} /> : <p>Friends not available, try refreshing this page.</p>} />
           <Route path="/login" element={<Login setAuthClient={setAuthClient} setCurrentAccount={setCurrentAccount} setActor={setActor} setIsLoggedIn={setIsLoggedIn} />} />
+          <Route path="/forums" element={actor ? <Forums actor={actor} currentPrincipal={currentAccount}/> : <p>Forums not available, try refreshing this page.</p>} />
         
           <Route path="/tunes" element={actor ? <Tunes actor={actor} currentPrincipal={currentAccount} setSidebarOpen={setSidebarOpen} /> : <p>Please log in to view tunes.</p>} />
 

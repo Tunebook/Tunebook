@@ -318,9 +318,16 @@ abc def | gfe dcB | ...`);
 
    </div>
 
-  <h2 className="title" style={{ fontSize: '30px', textAlign: 'center', marginBottom: '20px' }}>Browse Tunes</h2>
+  <h2 className="title" style={{ fontSize: '30px', textAlign: 'center', marginBottom: '20px',  color: "#86e3e6" }}>Browse Tunes</h2>
 
-  <div className="search-filter" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+{/*
+  <h2 className="title" style={{ fontSize: '18px', textAlign: 'center', marginBottom: '20px', marginTop: '20px' }}> 
+    Most of these tunes come from an archive of old books and the transcriptions are currently being corrected. Posting very soon.
+    
+    </h2>
+*/}
+
+  <div className="search-filter" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: "16px" }}>
     <input
       className="search-input"
       placeholder="Search for tunes"
@@ -328,11 +335,12 @@ abc def | gfe dcB | ...`);
       onChange={(e) => { setSearchTitle(e.target.value); setCurrentPage(0); }}
       style={{
         flex: 1,
-        marginRight: '10px',
+        marginRight: '15px',
         padding: '10px',
         borderRadius: '8px',
         backgroundColor: '#222',
         color: '#fff',
+        fontSize: "16px"
       }}
     />
     
@@ -573,7 +581,7 @@ abc def | gfe dcB | ...`);
                   <path d="M8 5v10l8-5z" /> 
                 </svg>
               </span>
-              {cleanTitle(tune.title.split("_+TBusername+:_")[0])}
+              {cleanTitle(tune.title.split("_")[0])}
             </p>
             
             <p className="tune-id">

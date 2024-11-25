@@ -1,0 +1,8 @@
+[
+    {
+        "match": ".well-known",
+        "ignore": false,
+        "security_policy": "standard",
+        "disable_security_policy_warning": true
+    }
+]
