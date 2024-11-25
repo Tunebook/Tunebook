@@ -54,7 +54,33 @@ type Instrument = record {
     "comment": text;
     "price": text;
     "photos": vec blob;
-}
+};
+
+type Forum = record {
+    "id": nat64;
+    "poster_principal": text;
+    "username": text;
+    "forum_name": text;
+    "forum_comment": text;
+    "principals": vec text;
+    "created_at": nat64;
+    "last_updated_at": opt nat64;
+    "threads": opt vec nat64;   
+};
+
+type ForumData = record {
+    "id": nat64;
+    "forum_id": opt nat64;
+    "username": text;
+    "forum_comment": text;
+    "principal": text;
+    "created_at": nat64;
+    "updated_at": opt nat64;
+    "photos": opt vec blob;
+    "likes": nat32;
+};
+
+
 
 service : (nat64) -> {
     "authentication": (text) -> (opt Profile) query;
@@ -83,5 +109,18 @@ service : (nat64) -> {
     "add_instrument": (text, text, text, text, text, text, text, text, vec blob) -> (bool);
     "get_instruments": (text, int32) -> (vec Instrument, int32) query;
     "delete_instrument": (nat32, text) -> (bool); 
+
+    
+    "get_forums": (text, int32) -> (vec Forum, int32) query;                           
+    "add_forum": (text, text, text, text) -> (bool);                                   
+    "add_post_to_forum": (nat64, text, text, text, vec blob) -> (bool);        
+    "get_forum_posts": (nat64, int32) -> (vec ForumData, int32) query;                 
+    "like_post": (nat64, text) -> (bool);                                              
+    "update_forum_post": (nat64, text, opt text, opt vec blob) -> (bool);          
+    "delete_forum": (nat64, text) -> (bool);                                           
+    "delete_post": (nat64, text) -> (bool);        
+    "get_post_photos": (nat64) -> (vec blob) query;
+    "get_forum_posts_without_photos": (nat64, int32) -> (vec ForumData, int32) query; 
+
 }
 

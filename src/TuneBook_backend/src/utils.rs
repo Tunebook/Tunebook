@@ -9,9 +9,13 @@ use std::collections::BTreeMap;
 use regex::Regex;
 use crate::utils::ic_cdk::api;
 use std::borrow::Borrow;
+use crate::types::{Forum, ForumData};
+use base64::decode;
+
 
     
-const TUNE_DB_INIT: &str = include_str!("./tune_db_converted.json");
+const TUNE_DB_INIT: &str = include_str!("./tunes_output.json");
+
 
 
 
@@ -25,6 +29,12 @@ type ProfileStore = StableBTreeMap<String, types::Profile, Memory>;
 type TuneDB = StableBTreeMap<String, types::Tune, Memory>;
 type SessionDB = StableBTreeMap<u32, types::Session, Memory>;
 type InstrumentStore = StableBTreeMap<u32, Instrument, Memory>;
+
+type ForumStore = StableBTreeMap<u64, Forum, Memory>;
+type ForumDataStore = StableBTreeMap<u64, ForumData, Memory>;
+
+
+
 
 
 impl Storable for types::Profile {
@@ -88,6 +98,40 @@ impl Storable for types::Instrument {
     };
 }
 
+impl Storable for types::Forum {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 10000000, // Adjust the max size based on your requirements
+        is_fixed_size: false,
+    };
+
+
+}
+
+impl Storable for types::ForumData {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 10000000, // Adjust the max size based on your requirements
+        is_fixed_size: false,
+    };
+
+}
+
+
 
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
@@ -114,45 +158,75 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(4)))
         )
     );
+
+    pub static FORUM_STORE: RefCell<ForumStore> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(5))) // Forum store
+        )
+    );
+
+    pub static FORUM_DATA_STORE: RefCell<ForumDataStore> = RefCell::new(
+        StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(6))) // Forum data store
+        )
+    );
 }
 
 
 
-// Initialize tunes from tune_db.json
+
+
 pub async fn init() {
     ic_cdk::setup();
 
     ic_cdk::println!("Initializing tunes from tune_db.json");
 
+    /*
+    // Clear the existing tunes
+    TUNE_STORE.with(|tune_store| {
+        let mut store = tune_store.borrow_mut();
+        let old_count = store.len();
+
+        // Use an iterator to get and remove all keys
+        let keys_to_remove: Vec<String> = store.iter().map(|(key, _)| key.clone()).collect();
+        for key in keys_to_remove {
+            store.remove(&key);
+        }
+
+        ic_cdk::println!("Cleared {} existing tunes from the canister", old_count);
+    });
+    */
+
+
+
+    // Parse the new tunes from TUNE_DB_INIT
     let parsed: Value = serde_json::from_str(TUNE_DB_INIT).expect("Failed to parse JSON");
 
+    // Add new tunes to the store
     TUNE_STORE.with(|tune_store| {
-        if tune_store.borrow().is_empty() {
-            if let Value::Object(ref tunes) = parsed {
-                let mut count = 0;
-                for (key, value) in tunes {
-                    let tune_data = value.as_str().unwrap().to_string();
-                    let new_tune = types::Tune {
-                        origin: true,
-                        title: key.clone(),
-                        tune_data: tune_data.clone(),
-                        timestamp: api::time(),
-                        principals: vec![],
-                        username: Some("Tunebook".to_string()),
-                    };
-                    tune_store.borrow_mut().insert(key.clone(), new_tune);
-                    count += 1;  // Count the number of tunes processed
-                }
-                ic_cdk::println!("Successfully loaded {} tunes into the canister", count);
-            } else {
-                ic_cdk::println!("Error: tune_db.json is not in the expected format");
+        if let Value::Object(ref tunes) = parsed {
+            let mut count = 0;
+            for (key, value) in tunes {
+                let tune_data = value.as_str().unwrap().to_string();
+                let new_tune = types::Tune {
+                    origin: true,
+                    title: key.clone(),
+                    tune_data: tune_data.clone(),
+                    timestamp: api::time(),
+                    principals: vec![],
+                    username: Some("Tunebook".to_string()),
+                };
+                tune_store.borrow_mut().insert(key.clone(), new_tune);
+                count += 1; // Count the number of tunes processed
             }
+            ic_cdk::println!("Successfully loaded {} new tunes into the canister", count);
         } else {
-            ic_cdk::println!("Tunes already loaded, skipping initialization");
+            ic_cdk::println!("Error: tune_db.json is not in the expected format");
         }
     });
-    
 }
+
+
 
 pub fn authentication(principal: String) -> Option<types::Profile> {
     PROFILE_STORE.with(|profile_store| {
@@ -617,7 +691,7 @@ pub fn filter_tunes(
                         username: tune_info.username.clone(),
                         
                     });
-                }
+                } 
                 current_index += 1;
 
                 // Stop if we've collected enough items for one page
@@ -922,5 +996,335 @@ pub fn get_session_count() -> u64 {
 }
 
 
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+                             // Forums
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+
+
+
+
+pub fn get_forums(search_term: &str, page_num: i32) -> (Vec<Forum>, i32) {
+    FORUM_STORE.with(|forum_store| {
+        let forums: Vec<Forum> = forum_store
+            .borrow()
+            .iter()
+            .filter(|(_, forum)| {
+                forum
+                    .forum_name
+                    .to_lowercase()
+                    .contains(&search_term.to_lowercase())
+                    || forum
+                        .username
+                        .to_lowercase()
+                        .contains(&search_term.to_lowercase())
+            })
+            .map(|(_, forum)| {
+                let mut forum = forum.clone();
+                // Ensure threads is initialized if None
+                if forum.threads.is_none() {
+                    forum.threads = Some(vec![]);
+                }
+                forum
+            })
+            .collect();
+
+        let paginated_forums: Vec<Forum> = forums
+            .iter()
+            .skip(page_num as usize * 15)
+            .take(15)
+            .cloned()
+            .collect();
+
+        (paginated_forums, forums.len() as i32)
+    })
+}
+
+
+
+
+
+pub fn add_forum(
+    principal: String,
+    username: String,
+    forum_name: String,
+    comment: String,
+) -> bool {
+    FORUM_STORE.with(|forum_store| {
+        let id = ic_cdk::api::time(); // Unique ID
+        let new_forum = Forum {
+            id,
+            poster_principal: principal.clone(),
+            username,
+            forum_name,
+            forum_comment: comment.clone(),
+            principals: vec![principal.clone()],
+            created_at: ic_cdk::api::time(),
+            last_updated_at: None,
+            threads: vec![].into(), // Initialize threads as an empty vector
+        };
+
+        forum_store.borrow_mut().insert(id, new_forum);
+        true
+    })
+}
+
+
+pub fn add_post_to_forum(
+    forum_id: u64,
+    username: String,
+    principal: String,
+    comment: String,
+    photos: Option<Vec<Vec<u8>>>,
+) -> bool {
+
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        FORUM_STORE.with(|forum_store| {
+
+            let mut forum_store = forum_store.borrow_mut();
+            let mut forum_data_store = forum_data_store.borrow_mut();
+
+            if let Some(mut forum) = forum_store.get(&forum_id) {
+                let post_id = ic_cdk::api::time(); // Unique ID for post
+                let new_post = ForumData {
+                    id: post_id,
+                    forum_id: Some(forum_id),
+                    username,
+                    forum_comment: comment,
+                    principal,
+                    created_at: ic_cdk::api::time(),
+                    updated_at: None,
+                    photos,
+                    likes: 0,
+                };
+
+                // Add the post ID to the forum's threads
+                if let Some(ref mut threads) = forum.threads {
+                    threads.push(post_id); // Append to existing threads
+                } else {
+                    forum.threads = Some(vec![post_id]); // Initialize threads if None
+                }
+
+                forum_store.insert(forum_id, forum); // Update forum
+                forum_data_store.insert(post_id, new_post); // Add new post
+
+                true
+            } else {
+                ic_cdk::println!("Forum with ID {} not found", forum_id);
+                false
+            }
+        })
+    })
+}
+
+
+
+pub fn like_post(post_id: u64, principal: String) -> bool {
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        let mut store = forum_data_store.borrow_mut();
+
+        if let Some(mut post) = store.get(&post_id) {
+            post.likes += 1;
+            store.insert(post_id, post);
+            true
+        } else {
+            ic_cdk::println!("Post with ID {} not found", post_id);
+            false
+        }
+    })
+}
+
+pub fn update_forum_post(
+    post_id: u64,
+    principal: String,
+    comment: Option<String>,
+    photos: Option<Vec<Vec<u8>>>,
+) -> bool {
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        let mut store = forum_data_store.borrow_mut();
+        if let Some(mut post) = store.get(&post_id) {
+            if post.principal == principal {
+                if let Some(new_comment) = comment {
+                    if new_comment.trim().is_empty() {
+                        ic_cdk::println!("cannot be empty {}", principal);
+                    }
+                    post.forum_comment = new_comment;
+                }
+                if let Some(new_photos) = photos {
+                    if !new_photos.is_empty() {
+                        post.photos = Some(new_photos);
+                    }
+                }
+                post.updated_at = Some(ic_cdk::api::time());
+                store.insert(post_id, post);
+                return true;
+            } else {
+                ic_cdk::println!("Unauthorized update attempt by {}", principal);
+                return false;
+            }
+        } else {
+            ic_cdk::println!("Post with ID {} not found", post_id);
+            false
+        }
+    })
+}
+
+
+
+
+pub fn delete_forum(forum_id: u64, principal: String) -> bool {
+    /*
+    if !is_admin(&principal) {
+        ic_cdk::println!("Unauthorized delete attempt by {}", principal);
+        return false; 
+    }*/
+    
+
+    FORUM_STORE.with(|forum_store| {
+        FORUM_DATA_STORE.with(|forum_data_store| {
+            let mut forum_store = forum_store.borrow_mut();
+            let mut forum_data_store = forum_data_store.borrow_mut();
+
+            if forum_store.remove(&forum_id).is_some() {
+                // Manually iterate and remove all posts related to the forum
+                let posts_to_remove: Vec<u64> = forum_data_store
+                    .iter()
+                    .filter(|(_, post)| post.id == forum_id)
+                    .map(|(post_id, _)| post_id) // Use post_id directly
+                    .collect();
+
+                for post_id in posts_to_remove {
+                    forum_data_store.remove(&post_id);
+                }
+
+                ic_cdk::println!("Forum with ID {} and its posts were deleted", forum_id);
+                true
+            } else {
+                ic_cdk::println!("Forum with ID {} not found", forum_id);
+                false
+            }
+        })
+    })
+}
+
+
+
+pub fn delete_post(post_id: u64, principal: String) -> bool {
+
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        let mut store = forum_data_store.borrow_mut();
+
+        if store.remove(&post_id).is_some() {
+            ic_cdk::println!("Post with ID {} was deleted", post_id);
+            true
+        } else {
+            ic_cdk::println!("Post with ID {} not found", post_id);
+            false
+        }
+    })
+}
+
+pub fn get_forum_posts(forum_id: u64, page_num: i32) -> Result<(Vec<ForumData>, i32), String> {
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        let all_posts: Vec<ForumData> = forum_data_store
+            .borrow()
+            .iter()
+            .filter(|(_, post)| post.forum_id == Some(forum_id))
+            .map(|(_, post)| post.clone())
+            .collect();
+
+        let paginated_posts: Vec<ForumData> = all_posts
+            .iter()
+            .skip(page_num as usize * 10) // Paginate 10 posts per page
+            .take(10)
+            .cloned()
+            .collect();
+
+        // Check payload size
+        let encoded_size = Encode!(&paginated_posts).unwrap().len();
+        if encoded_size > 3_145_728 {
+            return Err("Response size exceeds 3 MB".to_string());
+        }
+
+        Ok((paginated_posts, all_posts.len() as i32))
+    })
+}
+
+/*
+pub fn get_forum_posts(forum_ids: u64, page_num: i32) -> (Vec<ForumData>, i32) {
+
+
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        let res: Vec<ForumData> = forum_data_store
+            .borrow()
+            .iter()
+            .filter(|(_, post)| post.forum_id == Some(forum_ids)) 
+            .map(|(_, post)| post.clone())
+            .collect();
+
+        let result: Vec<ForumData> = res
+            .iter()
+            .skip(page_num as usize * 15)
+            .take(15)
+            .cloned()
+            .collect();
+
+        (result, res.len() as i32)
+    })
+}
+*/
+
+pub fn get_forum_posts_without_photos(forum_id: u64, page_num: i32) -> (Vec<ForumData>, i32) {
+    FORUM_DATA_STORE.with(|forum_data_store| {
+        let posts: Vec<ForumData> = forum_data_store
+            .borrow()
+            .iter()
+            .filter(|(_, post)| post.forum_id == Some(forum_id))
+            .map(|(_, post)| {
+                let mut post_without_photos = post.clone();
+                post_without_photos.photos = None; // Exclude photos
+                post_without_photos
+            })
+            .collect();
+
+        let paginated_posts = posts
+            .iter()
+            .skip(page_num as usize * 15)
+            .take(15)
+            .cloned()
+            .collect();
+
+        (paginated_posts, posts.len() as i32)
+    })
+}
+
+
+
+    
+    pub fn get_post_photos(post_id: u64) -> Option<Vec<Vec<u8>>> {
+        FORUM_DATA_STORE.with(|forum_data_store| {
+            forum_data_store
+                .borrow()
+                .get(&post_id)
+                .and_then(|post| post.photos.clone())
+        })
+    }
+    
+
+
+pub fn is_admin(principal: &String) -> bool {
+    let admin_principals = vec![
+        "zhaxx-r7zkt-gffvf-jvw46-hxhj5-xewo7-cwrq6-nmza3-wpiwz-swnet-vqe".to_string(), // Replace with actual admin IDs
+    ];
+    admin_principals.contains(principal)
+}
 
 

@@ -64,3 +64,30 @@ pub struct Instrument {
     pub price: String,
     pub photos: Vec<Vec<u8>>,
 }
+
+
+#[derive(CandidType, Clone, Deserialize, Debug)]
+pub struct Forum {
+    pub id: u64,                     
+    pub poster_principal: String,    
+    pub username: String,        
+    pub forum_name: String,        
+    pub forum_comment: String,    
+    pub principals: Vec<String>,     
+    pub created_at: u64,            
+    pub last_updated_at: Option<u64>,
+    pub threads: Option<Vec<u64>>
+}
+
+#[derive(CandidType, Clone, Deserialize, Debug)]
+pub struct ForumData {
+    pub id: u64, 
+    pub forum_id: Option<u64>,                  
+    pub username: String,         
+    pub forum_comment: String,      
+    pub principal: String,     
+    pub created_at: u64,           
+    pub updated_at: Option<u64>,     
+    pub photos: Option<Vec<Vec<u8>>>,
+    pub likes: u32,                  
+}

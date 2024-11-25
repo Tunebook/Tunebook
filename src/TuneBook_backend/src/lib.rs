@@ -1,5 +1,7 @@
 mod utils;
 mod types;
+use crate::types::{Forum, ForumData};
+
 
 #[ic_cdk::init]
 fn init(time: u64) {
@@ -91,13 +93,6 @@ pub async fn cancel_friend_request(sender: String, receiver: String) -> bool {
 pub fn filter_tunes(title:String, rithm: String, key: String, page_num: i32) -> (Vec<types::Tuneinfo>, i32) {
     utils::filter_tunes(title.as_str(), rithm.as_str(), key.as_str(), page_num)
 }
-    
-/*
-#[ic_cdk::query]
-pub fn filter_tunes(title: String, rithm: String, key: String, batch_start_index: i32, batch_size: i32) -> (Vec<types::Tuneinfo>, i32) {
-    utils::filter_tunes(title.as_str(), rithm.as_str(), key.as_str(), batch_start_index, batch_size)
-}
-*/
 
 #[ic_cdk::query]
 pub fn browse_people(principal: String, filter: String, page_num:i32) -> (Vec<types::Friend>, i32) {
@@ -167,4 +162,65 @@ fn get_tune_count() -> u64 {
 #[ic_cdk::query]
 fn get_session_count() -> u64 {
     utils::get_session_count()
+}
+
+
+#[ic_cdk::query]
+pub fn get_forums(search_term: String, page_num: i32) -> (Vec<types::Forum>, i32) {
+    utils::get_forums(search_term.as_str(), page_num)
+}
+
+
+#[ic_cdk::update]
+pub fn delete_forum(forum_id: u64, principal: String) -> bool {
+    utils::delete_forum(forum_id, principal)
+}
+
+#[ic_cdk::update]
+pub fn delete_post(post_id: u64, principal: String) -> bool {
+    utils::delete_post(post_id, principal)
+}
+
+#[ic_cdk::update]
+pub fn update_forum_post(
+    post_id: u64,
+    principal: String,
+    comment: Option<String>,
+    photos: Option<Vec<Vec<u8>>>,
+) -> bool {
+    utils::update_forum_post(post_id, principal, comment, photos)
+}
+
+
+#[ic_cdk::update]
+pub fn add_post_to_forum(
+    forum_id: u64,
+    username: String,
+    principal: String,
+    comment: String,
+    photos: Option<Vec<Vec<u8>>>
+) -> bool {
+    utils::add_post_to_forum(forum_id, username, principal, comment, photos)
+}
+
+
+#[ic_cdk::update]
+pub fn add_forum(
+    principal: String,
+    username: String,
+    forum_name: String,
+    comment: String,
+) -> bool {
+    utils::add_forum(principal, username, forum_name, comment)
+}
+
+
+#[ic_cdk::query] 
+pub fn get_forum_posts(forum_id: u64, page_num: i32) -> (Vec<ForumData>, i32) {
+    utils::get_forum_posts(forum_id, page_num).expect("REASON")
+}
+
+#[ic_cdk::query] 
+pub fn get_forum_posts_without_photos(forum_id: u64, page_num: i32) -> (Vec<ForumData>, i32) {
+    utils::get_forum_posts_without_photos(forum_id, page_num)
 }
