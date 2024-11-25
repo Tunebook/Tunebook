@@ -22,6 +22,8 @@ function Forums({ actor, currentPrincipal }) {
     setNewPost({ text: '', photos: [] }); // Reset newPost state
     if (fileInputRef.current) fileInputRef.current.value = []; // Clear file input field
   };
+  
+  
 
   const openUpdateModal = (post) => {
     setPostToUpdate(post);
@@ -41,10 +43,7 @@ function Forums({ actor, currentPrincipal }) {
     event.preventDefault();
   };
 
-  const handleDrop = (event) => {
-    event.preventDefault();
-    setFiles(event.dataTransfer.files[0]);
-  };
+  
 
   const convertUint8ArrayToBase64 = (uint8Array) => {
     if (uint8Array && uint8Array.byteLength) {
@@ -59,12 +58,14 @@ function Forums({ actor, currentPrincipal }) {
       return ''; 
     }
   };
+  
+  
 
 
   const compressImage = async (file) => {
     const options = {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1024,
+      maxSizeMB: 0.5, 
+      maxWidthOrHeight: 500, 
       useWebWorker: true,
     };
     try {
@@ -76,17 +77,54 @@ function Forums({ actor, currentPrincipal }) {
       return null;
     }
   };
+  
 
   const handlePhotoUpload = async (e) => {
-    const files = Array.from(e.target.files).slice(0, 5); // Limit to 5 photos
+    const files = Array.from(e.target.files).slice(0, 1); // Limit to 1 photo
+   
+      const compressedPhotos = await Promise.all(
+        files.map((file) => compressImage(file))
+      );
+      setNewPost((prev) => ({
+        ...prev,
+        photos: compressedPhotos.slice(0, 1), // Keep only the first photo
+      }));
+      
+  
+  };
+  
+  const handleDrop = async (event) => {
+    event.preventDefault();
+    const droppedFiles = Array.from(event.dataTransfer.files).slice(0, 1); // Limit to 1 photo
+    if (droppedFiles.length > 0) {
+      const compressedPhotos = await Promise.all(
+        droppedFiles.map((file) => compressImage(file))
+      );
+      setNewPost((prev) => ({
+        ...prev,
+        photos: compressedPhotos.slice(0, 1), // Keep only the first photo
+      }));
+    } else {
+      alert('You can only upload one photo per post.');
+    }
+  };
+  
+  const compressDroppedFiles = async () => {
+    if (files.length > 1) {
+      alert('You can only upload one photo per post.');
+      setFiles([]); // Clear the files array
+      return;
+    }
+  
     const compressedPhotos = await Promise.all(
       files.map((file) => compressImage(file))
     );
-
+  
     setNewPost((prev) => ({
       ...prev,
-      photos: [...prev.photos, ...compressedPhotos.filter((photo) => photo !== null)],
+      photos: compressedPhotos.slice(0, 1), // Keep only the first photo
     }));
+    setFiles([]); // Clear the temporary files array after processing
   };
   
 
@@ -116,15 +154,54 @@ function Forums({ actor, currentPrincipal }) {
     }
   };
 
-  const fetchPosts = async (forumId) => {
+
+  const fetchPosts = async (forumId, page = 0) => {
     setLoading(true);
     try {
-      const [forumPosts] = await actor.get_forum_posts(forumId, 0);
-      setPosts(forumPosts);
+      const [forumPosts, totalCount] = await actor.get_forum_posts(forumId, page);
+      if (page === 0) {
+        setPosts(forumPosts); // For first load
+      } else {
+        setPosts((prev) => [...prev, ...forumPosts]); // Append new posts
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+  
+      // Check if the error is due to the response size limit
+      if (
+        error.message.includes(' size exceeds') ||
+        error.message.includes('payload size')
+      ) {
+        console.warn(
+          'Response size exceeds the limit. Retrying without photos...'
+        );
+  
+        try {
+          // Retry the fetch without photos (using a backend method that excludes photos)
+          const [forumPostsWithoutPhotos, totalCountWithoutPhotos] =
+            await actor.get_forum_posts_without_photos(forumId, page);
+  
+          if (page === 0) {
+            setPosts(forumPostsWithoutPhotos); // For first load
+          } else {
+            setPosts((prev) => [...prev, ...forumPostsWithoutPhotos]); // Append new posts
+          }
+        } catch (retryError) {
+          console.error('Error fetching posts without photos:', retryError);
+          alert(
+            'Failed to fetch posts due to size limitations. Please try again later.'
+          );
+        }
+      } else {
+        alert('Failed to fetch posts. Please try again later.');
+      }
     } finally {
       setLoading(false);
     }
   };
+  
+
+  
 
   const handleAddForum = async () => {
     if (newForum.name.trim() && newForum.comment.trim()) {
@@ -192,9 +269,11 @@ function Forums({ actor, currentPrincipal }) {
       );
 
       if (success) {
-        setNewPost({ text: '', photos: [] });
         clearFileInput();
         fetchPosts(selectedForum.id);
+        setNewPost({ text: '', photos: [] });
+        clearFileInput();
+      
       } else {
         alert('Failed to add post.');
       }
@@ -202,6 +281,8 @@ function Forums({ actor, currentPrincipal }) {
       setLoading(false);
     }
   };
+
+  
 
   const handleForumClick = (forum) => {
     setSelectedForum(forum);
@@ -272,6 +353,15 @@ function Forums({ actor, currentPrincipal }) {
     }
   };
      
+  
+  useEffect(() => {
+    if (posts.length > 0) {
+      posts.forEach((post) => {
+        if (!post.photos) fetchPhotosForPost(post.id);
+      });
+    }
+  }, [posts]);
+  
     
 
   return (
@@ -417,19 +507,25 @@ function Forums({ actor, currentPrincipal }) {
                       {/* Post Photos */}
                       <div className="post-image-container">
                         {post.photos && post.photos.length > 0 ? (
-                          post.photos.map((photo, index) => (
-                            <img
-                              key={index}
-                              src={`data:image/png;base64,${convertUint8ArrayToBase64(photo)}`}
-                              alt={`post ${index + 1}`}
-                              className="instrument-photo"
-                              style={{ width: '100px', height: '100px', margin: '5px' }}
-                            />
-                          ))
+                          post.photos.map((photo, index) => {
+                              return (
+                                <img
+                                  key={index}
+                                  src={`data:image/png;base64,${convertUint8ArrayToBase64(photo[index])}`}
+                                  alt={`post ${index + 1}`}
+                                  className="instrument-photo"
+                                  style={{ minWidth: '125px', minHeight: '125px', margin: '5px', borderRadius: '10px', display: 'flex', maxWidth: '300px', maxHeight: '300px' }}
+                                />
+                              );
+                        
+                          })
                         ) : (
                           <div className="no-image-placeholder"></div>
                         )}
                       </div>
+
+
+
     
                       {/* Delete Button */}
                       {post.principal === currentPrincipal && (
@@ -443,7 +539,10 @@ function Forums({ actor, currentPrincipal }) {
                           🗑️
                         </button>
                       )}
+               
+
                     </div>
+                    
                   ))
                 ) : (
                   <p>No posts available for this forum.</p>
@@ -485,7 +584,7 @@ function Forums({ actor, currentPrincipal }) {
                     <input
                       id="file-input"
                       type="file"
-                      multiple
+                      single
                       accept="image/*"
                       onChange={handlePhotoUpload}
                     />

@@ -25,15 +25,10 @@ import Forums from './components/Forums';
 const canisterId = "6owwo-2yaaa-aaaam-qbelq-cai";
 
 
-const isProduction = window.location.hostname === "tunebook.io";
-const host = isProduction ? "https://ic0.app"  : undefined;
-
-
 // Initialize actor without authentication
 const initActor = (identity) => {
   const agentOptions = identity ? { identity } : {};
-  //const agent = new HttpAgent({ ...agentOptions, host: "https://ic0.app" });  // Mainnet host
-  const agent = new HttpAgent({ ...agentOptions, host });  // Mainnet host
+  const agent = new HttpAgent({ ...agentOptions, host: "https://ic0.app" });  // Mainnet host
   return Actor.createActor(idlFactory, { agent, canisterId });
 };
 
@@ -341,9 +336,9 @@ const loginNFID = async () => {
 
                       <button
                         className="intro-links"
-                        onClick={() => navigate('/marketplace')} // Navigate to the Marketplace page
+                        onClick={() => navigate('/forums')} 
                       >
-                        Visit Marketplace
+                        Visit Forums
                       </button>
 
 

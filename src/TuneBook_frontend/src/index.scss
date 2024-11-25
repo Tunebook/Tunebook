@@ -1744,6 +1744,7 @@ h2 {
   background-color: #58d289;
   color: #000;
 }
+
 .requests-button:hover {
   background-color: #58d289;
   color: #000;
@@ -1767,6 +1768,7 @@ h2 {
 }
 
 .requests-button {
+  position: relative;
   background-color: rgb(28, 73, 73);
   box-shadow: 1px 2px #86e3e6;
   border: solid 2px #58b0d2;
@@ -1781,6 +1783,28 @@ h2 {
   text-align: center;
   margin-top: 20px;
 }
+
+
+.friend-requests-badge {
+  background-color: red;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  //top: 10px;
+  //left: 96%;
+  //bottom: 22px;
+  top: 7.5px;
+  right: 15px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+}
+
 
 
 /* ------------------------------------------------------------- */

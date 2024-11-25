@@ -214,6 +214,7 @@ const fetchFriends = async () => {
   
       if (result) {
         console.log("Friend request sent successfully!");
+        await fetchFriendRequests();
   /*
         setSentRequests((prevSentRequests) => [
           ...prevSentRequests,
@@ -246,6 +247,7 @@ const fetchFriendProfile = async (principal) => {
         instruments: profile.instruments || 'None listed',  // Fet ching instruments
         bio: profile.bio || '...',
         avatar: profile.avatar,              // Avatar
+        friends: profile.friends
       });
     } else {
       console.warn(`No profile found for principal: ${principal}`);
@@ -706,6 +708,9 @@ const fetchFriendRequests = async () => {
         </button>
         <button className="requests-button" onClick={handleFriendRequestsClick}>
           Friend Requests
+          {receivedRequests.length > 0 && (
+              <span className="friend-requests-badge">{receivedRequests.length}</span>
+            )}
         </button>
 
         {/* Search Input */}
@@ -795,11 +800,14 @@ const fetchFriendRequests = async () => {
             className="profile-avatar"
             style={{ width: '130px', height: '130px', alignSelf: 'center', border: '1px solid white' }}
           />
+          
 
           <div className='profile-details-display'>
           <p> 👤  {myProfile.username}</p>
           <p> 📍 {myProfile.pob || 'Unknown'}</p>
           <p> 🎵  {myProfile.instruments || 'None listed'}</p>
+          <p> 👥 Friends: {myProfile.friends.length}</p>
+
           {myProfile.bio && <p> 📝  {myProfile.bio}</p>}
         </div>
         </div>
@@ -1031,6 +1039,7 @@ const fetchFriendRequests = async () => {
           <p> 👤  {selectedFriendProfile.username}</p>
           <p> 📍 {selectedFriendProfile.pob}</p>  {/* Display pob */}
           <p> 🎵 {selectedFriendProfile.instruments}</p>  {/* Display instruments */}
+          <p> 👥 Friends: {selectedFriendProfile.friends.length}</p>
           {selectedFriendProfile.bio && <p> 📝  {selectedFriendProfile.bio}</p>}
 
           </div>
