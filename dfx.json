@@ -1,26 +1,20 @@
 {
   "canisters": {
-    "TuneBook_backend": {
-      "candid": "src/TuneBook_backend/TuneBook_backend.did",
-      "package": "TuneBook_backend",
-      "type": "rust"
+    "www": {
+      "type": "assets",
+      "source": ["out"]
     },
-    "TuneBook_frontend": {
-      "dependencies": [
-        "TuneBook_backend"
-      ],
-      "source": [
-        "src/TuneBook_frontend/dist"
-      ]
+    "production": {
+      "type": "assets",
+      "source": ["out"]
     }
   },
-  "defaults": {
-    "build": {
-      "args": "",
-      "packtool": ""
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:12345",
+      "type": "ephemeral"
     }
-  },
-  "output_env_file": ".env",
-  "version": 1
+  }
 }
+
 
