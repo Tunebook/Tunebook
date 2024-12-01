@@ -20,6 +20,28 @@ export const idlFactory = ({ IDL }) => {
     'username' : IDL.Opt(IDL.Text),
     'tune_data' : IDL.Text,
   });
+  const ForumData = IDL.Record({
+    'id' : IDL.Nat64,
+    'forum_id' : IDL.Opt(IDL.Nat64),
+    'updated_at' : IDL.Opt(IDL.Nat64),
+    'principal' : IDL.Text,
+    'forum_comment' : IDL.Text,
+    'username' : IDL.Text,
+    'created_at' : IDL.Nat64,
+    'likes' : IDL.Nat32,
+    'photos' : IDL.Opt(IDL.Vec(IDL.Vec(IDL.Nat8))),
+  });
+  const Forum = IDL.Record({
+    'id' : IDL.Nat64,
+    'forum_comment' : IDL.Text,
+    'forum_name' : IDL.Text,
+    'username' : IDL.Text,
+    'threads' : IDL.Opt(IDL.Vec(IDL.Nat64)),
+    'created_at' : IDL.Nat64,
+    'poster_principal' : IDL.Text,
+    'last_updated_at' : IDL.Opt(IDL.Nat64),
+    'principals' : IDL.Vec(IDL.Text),
+  });
   const Instrument = IDL.Record({
     'id' : IDL.Nat32,
     'username' : IDL.Text,
@@ -53,6 +75,11 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'accept_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'add_forum' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'add_instrument' : IDL.Func(
         [
           IDL.Text,
@@ -65,6 +92,11 @@ export const idlFactory = ({ IDL }) => {
           IDL.Text,
           IDL.Vec(IDL.Vec(IDL.Nat8)),
         ],
+        [IDL.Bool],
+        [],
+      ),
+    'add_post_to_forum' : IDL.Func(
+        [IDL.Nat64, IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Vec(IDL.Nat8))],
         [IDL.Bool],
         [],
       ),
@@ -94,11 +126,28 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'cancel_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'delete_forum' : IDL.Func([IDL.Nat64, IDL.Text], [IDL.Bool], []),
     'delete_instrument' : IDL.Func([IDL.Nat32, IDL.Text], [IDL.Bool], []),
+    'delete_post' : IDL.Func([IDL.Nat64, IDL.Text], [IDL.Bool], []),
     'delete_session' : IDL.Func([IDL.Nat32, IDL.Text], [IDL.Bool], []),
     'filter_tunes' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Int32],
         [IDL.Vec(Tuneinfo), IDL.Int32],
+        ['query'],
+      ),
+    'get_forum_posts' : IDL.Func(
+        [IDL.Nat64, IDL.Int32],
+        [IDL.Vec(ForumData), IDL.Int32],
+        ['query'],
+      ),
+    'get_forum_posts_without_photos' : IDL.Func(
+        [IDL.Nat64, IDL.Int32],
+        [IDL.Vec(ForumData), IDL.Int32],
+        ['query'],
+      ),
+    'get_forums' : IDL.Func(
+        [IDL.Text, IDL.Int32],
+        [IDL.Vec(Forum), IDL.Int32],
         ['query'],
       ),
     'get_friends' : IDL.Func([IDL.Text], [IDL.Vec(Friend)], ['query']),
@@ -118,6 +167,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Text), IDL.Int32],
         ['query'],
       ),
+    'get_post_photos' : IDL.Func(
+        [IDL.Nat64],
+        [IDL.Vec(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
     'get_profile_count' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_session_count' : IDL.Func([], [IDL.Nat64], ['query']),
     'get_sessions' : IDL.Func(
@@ -132,10 +186,21 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Tuneinfo), IDL.Int32],
         ['query'],
       ),
+    'like_post' : IDL.Func([IDL.Nat64, IDL.Text], [IDL.Bool], []),
     'remove_tune' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'send_friend_request' : IDL.Func(
         [IDL.Text, IDL.Text],
         [IDL.Opt(Friend)],
+        [],
+      ),
+    'update_forum_post' : IDL.Func(
+        [
+          IDL.Nat64,
+          IDL.Text,
+          IDL.Opt(IDL.Text),
+          IDL.Opt(IDL.Vec(IDL.Vec(IDL.Nat8))),
+        ],
+        [IDL.Bool],
         [],
       ),
     'update_profile' : IDL.Func(

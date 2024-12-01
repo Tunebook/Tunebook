@@ -1,3 +1,25 @@
+type Forum = record {
+  id : nat64;
+  forum_comment : text;
+  forum_name : text;
+  username : text;
+  threads : opt vec nat64;
+  created_at : nat64;
+  poster_principal : text;
+  last_updated_at : opt nat64;
+  principals : vec text;
+};
+type ForumData = record {
+  id : nat64;
+  forum_id : opt nat64;
+  updated_at : opt nat64;
+  "principal" : text;
+  forum_comment : text;
+  username : text;
+  created_at : nat64;
+  likes : nat32;
+  photos : opt vec blob;
+};
 type Friend = record { "principal" : text; username : text; avatar : blob };
 type Instrument = record {
   id : nat32;
@@ -44,6 +66,7 @@ type Tune = record {
 type Tuneinfo = record { title : text; username : opt text; tune_data : text };
 service : (nat64) -> {
   accept_friend_request : (text, text) -> (bool);
+  add_forum : (text, text, text, text) -> (bool);
   add_instrument : (
       text,
       text,
@@ -55,27 +78,39 @@ service : (nat64) -> {
       text,
       vec blob,
     ) -> (bool);
+  add_post_to_forum : (nat64, text, text, text, vec blob) -> (bool);
   add_session : (text, text, text, text, text, text, text, text) -> (bool);
   add_tune : (text, text, text, bool, text) -> (bool);
   authentication : (text) -> (opt Profile) query;
   browse_people : (text, text, int32) -> (vec Friend, int32) query;
   cancel_friend_request : (text, text) -> (bool);
+  delete_forum : (nat64, text) -> (bool);
   delete_instrument : (nat32, text) -> (bool);
+  delete_post : (nat64, text) -> (bool);
   delete_session : (nat32, text) -> (bool);
   filter_tunes : (text, text, text, int32) -> (vec Tuneinfo, int32) query;
+  get_forum_posts : (nat64, int32) -> (vec ForumData, int32) query;
+  get_forum_posts_without_photos : (nat64, int32) -> (
+      vec ForumData,
+      int32,
+    ) query;
+  get_forums : (text, int32) -> (vec Forum, int32) query;
   get_friends : (text) -> (vec Friend) query;
   get_instruments : (text, int32) -> (vec Instrument, int32) query;
   get_new_tunes_from_friends : (text) -> (vec Tune) query;
   get_original_tune : (text) -> (text) query;
   get_original_tune_list : (int32) -> (vec text, int32) query;
+  get_post_photos : (nat64) -> (vec blob) query;
   get_profile_count : () -> (nat64) query;
   get_session_count : () -> (nat64) query;
   get_sessions : (text, int32) -> (vec Session, int32) query;
   get_tune_count : () -> (nat64) query;
   get_user_tune : (text, text) -> (text) query;
   get_user_tune_list : (text, int32) -> (vec Tuneinfo, int32) query;
+  like_post : (nat64, text) -> (bool);
   remove_tune : (text, text) -> (bool);
   send_friend_request : (text, text) -> (opt Friend);
+  update_forum_post : (nat64, text, opt text, opt vec blob) -> (bool);
   update_profile : (text, text, text, text, text, blob) -> (Profile);
   update_session : (nat32, text, text, text, text, text, text, text, text) -> (
       bool,
