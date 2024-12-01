@@ -1,20 +1,34 @@
 {
   "canisters": {
-    "www": {
-      "type": "assets",
-      "source": ["out"]
+    "TuneBook_backend": {
+      "candid": "src/TuneBook_backend/TuneBook_backend.did",
+      "package": "TuneBook_backend",
+      "type": "rust",
+      "canister_id": {
+        "ic": "6owwo-2yaaa-aaaam-qbelq-cai"
+      }
     },
-    "production": {
+    "TuneBook_frontend": {
+      "dependencies": [
+        "TuneBook_backend"
+      ],
+      "source": [
+        "src/TuneBook_frontend/dist"
+      ],
       "type": "assets",
-      "source": ["out"]
+      "canister_id": {
+        "ic": "7dysa-vqaaa-aaaam-qbema-cai"
+      }
     }
   },
-  "networks": {
-    "local": {
-      "bind": "127.0.0.1:12345",
-      "type": "ephemeral"
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
     }
-  }
+  },
+  "output_env_file": ".env",
+  "version": 1
 }
 
 
